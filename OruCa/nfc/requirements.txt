@@ -1,0 +1,3 @@
+nfcpy
+requests
+websockets

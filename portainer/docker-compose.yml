@@ -1,0 +1,25 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    expose:
+      - "9000" # Portainerがリッスンするポート (HTTPの場合)
+      - "9443" # Portainerがリッスンするポート (HTTPの場合)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+    networks:
+      - fukaya-lab-network
+    labels:
+      caddy: portainer.fukaya-sus.lab
+      caddy.reverse_proxy: "{{upstreams 9000}}"
+      caddy.tls: "internal"
+
+networks:
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network
+
+volumes:
+  portainer_data:

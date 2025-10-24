@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+.pnp.*
+.yarn
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Build outputs
+/dist
+/build
+/packages/database/dist
+
+# IDE & OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Env files
+.env
+.env.*.local
+*.env
+
+# Logs
+logs
+*.log
+
+PrismaClient/

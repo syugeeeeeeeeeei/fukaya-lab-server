@@ -1,0 +1,28 @@
+# Dockerビルドコンテキストに含めないファイルを指定
+
+# OS固有のファイル
+.DS_Store
+*.swo
+*~
+.idea
+.vscode
+
+# 依存関係（コンテナ内でインストールするため不要）
+node_modules
+packages/*/node_modules
+
+# ビルド成果物
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Env
+.env
+*.env
+
+# Logs
+logs
+*.log

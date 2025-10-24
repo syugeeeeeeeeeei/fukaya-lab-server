@@ -1,0 +1,29 @@
+# コメント: 以下は除外するファイルやディレクトリ
+
+# node_modulesは除外
+**/node_modules
+node_modules
+
+# ログファイル
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# ローカルの開発環境に関するファイル
+.DS_Store
+.vscode/
+.idea/
+
+# テストやビルド時の一時ファイル
+test/
+dist/
+build/
+
+# コンテナ内で不要な設定ファイル
+.env
+.git
+tmp
+log
+*.tar
+*.zip
+*.log

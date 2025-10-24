@@ -1,0 +1,17 @@
+# docker-compose.yml (Base configuration)
+services:
+  vite:
+    build:
+      context: ./vite
+      dockerfile: Dockerfile
+    volumes:
+      - ./vite:/app:delegated
+      - /app/node_modules
+    networks:
+      - project_botany_network
+    restart: unless-stopped
+
+networks:
+  project_botany_network:
+    name: project_botany_network
+    driver: bridge

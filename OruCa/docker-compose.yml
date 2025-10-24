@@ -1,0 +1,115 @@
+services:
+ # 開発用 Vite
+  vite:
+    build:
+      context: ./vite
+      dockerfile: Dockerfile
+    container_name: oruca-vite
+    volumes:
+      - ./vite:/app:rw
+    ports: # 開発時に直接アクセスしたい場合はコメント解除
+      - "4000:4000"
+    command: ["tail","-f","/dev/null"]
+    restart: unless-stopped
+    networks:
+      - default 
+    profiles:
+      - "dev"
+
+  # 本番用 Nginx
+  web:
+    build:
+      context: web
+    container_name: oruca-web
+    # ports: # リバースプロキシ経由のためコメントアウト
+      # - "4040:80"
+    volumes:
+      - ./vite/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - api # apiがmysqlに依存するため、これでmysql起動後になる
+    networks:
+      - default
+      - fukaya-lab-network
+    restart: unless-stopped
+    profiles:
+      - "prod"
+    labels:
+      caddy: oruca.fukaya-sus.lab
+      caddy.reverse_proxy: "{{upstreams 80}}"
+      caddy.tls: "internal"
+
+  # mysql
+  mysql:
+    build:
+      context: mysql
+      args:
+        MYSQL_DATABASE : ${MYSQL_DATABASE}
+        MYSQL_USER : ${MYSQL_USER}
+        MYSQL_PASSWORD : ${MYSQL_PASSWORD}
+        MYSQL_ROOT_PASSWORD : ${MYSQL_ROOT_PASSWORD}
+    container_name: oruca-mysql
+    restart: unless-stopped
+    env_file:
+      - .env
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - ./mysql/data/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    # ports: # 外部から直接DBにアクセスしない場合はコメントアウト推奨
+      # - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+    networks:
+      - default
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: oruca-api
+    restart: unless-stopped
+    volumes:
+      - ./api:/app:rw
+    env_file: # DATABASE_URLは.envファイルまたはアプリケーションコード内で設定される想定
+      - .env
+    command: ["yarn","start"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - default
+
+  nfc:
+    container_name: oruca-nfc
+    build:
+      context: nfc
+    init: true
+    restart: unless-stopped
+    volumes:
+      - ./nfc:/app:rw
+    environment:
+      - TZ=Asia/Tokyo
+    command: ["python","main.py"]
+    depends_on:
+      mysql: # nfcサービスもmysqlに依存する場合
+        condition: service_healthy
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
+    networks:
+      - default
+
+
+networks:
+  default : # リバースプロキシのdocker-compose.ymlで定義・作成されるネットワークを参照
+    driver: bridge
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network
+
+volumes:
+  mysql_data: {}

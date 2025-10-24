@@ -1,0 +1,62 @@
+services:
+  # 🔄 Caddy - Reverse Proxy
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:2.9-alpine
+    container_name: proxy-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      -  fukaya-lab-network
+    environment:
+      - CADDY_INGRESS_NETWORKS=fukaya-lab-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - caddy_data:/data
+
+  # 👑 CoreDNS - Primary DNS Resolver
+  coredns:
+    image: coredns/coredns:latest
+    container_name: gatewaydns-coredns
+    restart: unless-stopped
+    ports:
+      - "192.168.11.224:53:53/tcp"
+      - "192.168.11.224:53:53/udp"
+    networks:
+      - fukaya-lab-network
+    volumes:
+      - ./Corefile:/Corefile
+    depends_on:
+      - adguardhome
+      - caddy
+
+  # 🛡️ AdGuard Home - DNS Server
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: maindns-adguardhome
+    restart: unless-stopped
+    ports: []
+    networks:
+      fukaya-lab-network:
+        ipv4_address: 172.20.0.11 # 👈 AdGuard Homeの固定IP
+    volumes:
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+    labels:
+      caddy: dns.fukaya-sus.lab
+      caddy.reverse_proxy: "{{upstreams 3000}}"
+      caddy.tls: "internal"
+
+networks:
+  fukaya-lab-network:
+    driver: bridge
+    name: fukaya-lab-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24 # 👈 ネットワークの範囲を定義
+
+volumes:
+  caddy_data:
+  adguard_work:
+  adguard_conf:
