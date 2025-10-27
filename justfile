@@ -1,5 +1,3 @@
-# /fukaya-lab-server/justfile (修正版)
-
 # .env ファイルを自動で読み込み、シェル環境変数としてエクスポートする
 set export := true
 set dotenv-load := true
@@ -41,7 +39,6 @@ down:
 
 # 指定したサービスを再起動します (例: just restart oruca-api)
 restart *ARGS:
-    # 修正点: 'ARGS || ...' を 'if ARGS == "" { ... } else { ... }' 構文に修正
     @echo "🔄 Restarting services: {{ if ARGS == "" { "all" } else { ARGS } }}"
     @docker compose restart {{ARGS}}
 
@@ -50,9 +47,37 @@ restart *ARGS:
 
 # サービスのログを表示します (例: just logs oruca-api oruca-nfc)
 logs *ARGS:
-    # 修正点: 'ARGS || ...' を 'if ARGS == "" { ... } else { ... }' 構文に修正
     @echo "📜 Showing logs for: {{ if ARGS == "" { "all services" } else { ARGS } }}"
     @docker compose logs -f {{ARGS}}
+
+# 実行中のサービス名リストを表示します
+ps:
+    @echo "📋 Currently running services:"
+    @docker compose ps --services
+
+# 指定したサービスを強制的に再作成します (コンテナのみ)
+recreate *ARGS:
+    @if [ "{{ARGS}}" = "" ]; then \
+        echo "ERROR: Please specify service name(s) to recreate."; \
+        exit 1; \
+    fi
+    @echo "♻️ Forcibly recreating services (container only): {{ARGS}}..."
+    @docker compose up -d --force-recreate --no-deps {{ARGS}}
+    @echo "✅ Services {{ARGS}} have been recreated."
+
+# 指定したサービスをボリュームごと削除し、再作成します
+# 警告: 関連する名前付きボリュームのデータが消去されます！
+rebuild *ARGS:
+    @if [ "{{ARGS}}" = "" ]; then \
+        echo "ERROR: Please specify service name(s) to rebuild."; \
+        exit 1; \
+    fi
+    @echo "💣 WARNING: Rebuilding services {{ARGS}} and REMOVING ASSOCIATED VOLUMES..."
+    @echo "   (Data will be lost for these services!)"
+    @docker compose down -v {{ARGS}}
+    @echo "   (Services stopped and volumes removed. Now recreating with build...)"
+    @docker compose up -d --build {{ARGS}}
+    @echo "✅ Services {{ARGS}} have been rebuilt."
 
 
 # --- 🛠️ 初回セットアップ ---

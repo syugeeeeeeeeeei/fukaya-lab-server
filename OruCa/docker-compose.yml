@@ -42,13 +42,13 @@ services:
   mysql:
     build:
       context: mysql
-      args:
-        MYSQL_DATABASE : ${MYSQL_DATABASE}
-        MYSQL_USER : ${MYSQL_USER}
-        MYSQL_PASSWORD : ${MYSQL_PASSWORD}
-        MYSQL_ROOT_PASSWORD : ${MYSQL_ROOT_PASSWORD}
     container_name: oruca-mysql
     restart: unless-stopped
+    environment:
+      MYSQL_DATABASE : ${MYSQL_DATABASE}
+      MYSQL_USER : ${MYSQL_USER}
+      MYSQL_PASSWORD : ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD : ${MYSQL_ROOT_PASSWORD}
     cap_add:
       - SYS_NICE
     volumes:
@@ -71,6 +71,12 @@ services:
       dockerfile: Dockerfile
     container_name: oruca-api
     restart: unless-stopped
+    environment:
+      MYSQL_DATABASE : ${MYSQL_DATABASE}
+      MYSQL_USER : ${MYSQL_USER}
+      MYSQL_PASSWORD : ${MYSQL_PASSWORD}
+      SLACK_BOT_TOKEN : ${SLACK_BOT_TOKEN}
+      SLACK_CHANNEL_ID : ${SLACK_CHANNEL_ID}
     volumes:
       - ./api:/app:rw
     command: ["yarn","start"]

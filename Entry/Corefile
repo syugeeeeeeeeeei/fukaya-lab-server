@@ -2,10 +2,12 @@
 fukaya-sus.lab:53 {
     hosts {
         # ブラウザに教えるべきCaddyの宛先は、ホストPCのlocalhost
-        192.168.11.225 ssh.fukaya-sus.lab
-        192.168.11.224 dns.fukaya-sus.lab 
+        # 環境変数 ($SSH_IP, $HOST_IP) を参照するように変更
+        {$SSH_IP} ssh.fukaya-sus.lab
+        {$HOST_IP} dns.fukaya-sus.lab 
         fallthrough
     }
+    # AdGuard (172.20.0.11) に転送
     forward . 172.20.0.11:53
     errors
 }
