@@ -1,4 +1,3 @@
-
 services:
   gitlab:
     image: 'gitlab/gitlab-ce:latest' # 使用するGitLabのDockerイメージ（Community Editionの最新版）
@@ -34,22 +33,10 @@ services:
 
     volumes:
       # ホストOSのパス : コンテナ内のパス
-      - './config:/etc/gitlab'    # GitLabの設定ファイルを永続化
-      - './logs:/var/log/gitlab'  # GitLabのログファイルを永続化
-      - './data:/var/opt/gitlab'  # GitLabのデータ（リポジトリ、アップロードファイル等）を永続化
+      - 'gitlab_config:/etc/gitlab'    # GitLabの設定ファイルを永続化
+      - 'gitlab_logs:/var/log/gitlab'  # GitLabのログファイルを永続化
+      - 'gitlab_data:/var/opt/gitlab'  # GitLabのデータ（リポジトリ、アップロードファイル等）を永続化
 
     shm_size: '256m' # Puma（GitLabのWebサーバー）のために推奨される共有メモリサイズ
     networks:
-      - reverse_proxy_network 
-
-# ネットワーク設定 (オプション)
-networks:
-  reverse_proxy_network:
-    external: true # 既存のリバースプロキシネットワークを使用
-    name: reverse_proxy_network
-
-# ボリューム設定 (オプション、上記services内で直接指定する方が一般的)
-# volumes:
-#  gitlab-config:
-#  gitlab-logs:
-#  gitlab-data:
+      - fukaya-lab-network

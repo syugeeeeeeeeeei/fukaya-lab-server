@@ -1,0 +1,37 @@
+# /fukaya-lab-server/OruCa/justfile (新規作成)
+
+# --- 🛠️ OruCa ビルドタスク ---
+# ルートの 'build' メタタスクから 'OruCa::build' として呼び出されます。
+build:
+    @echo "🛠️ Building OruCa frontend application..."
+    # 'vite' コンテナを使ってビルドを実行
+    @docker compose --profile dev run --rm vite yarn build
+    @echo "✅ OruCa Frontend built to ./vite/dist/"
+
+
+# --- 📦 OruCa 固有タスク ---
+# 'just OruCa::usb' のように呼び出します。
+
+# (WSL用) OruCaのNFCリーダーをWSLにアタッチします
+# (OruCa/Makefile の 'attach-usb' から移植)
+usb:
+    @echo "🔌 Attaching USB FeliCa Reader to WSL..."
+    @powershell.exe -ExecutionPolicy Bypass -File ./usb-wsl-attach.ps1
+    @echo "✅ USB device attached."
+
+# OruCaのDBバックアップを保存します
+# (OruCa/Makefile の 'save-backup' から移植)
+backup:
+    @echo "💾 Saving OruCa MySQL backup..."
+    @# ルートの 'set export' により $MYSQL_USER 等が環境変数として利用可能です
+    @docker compose exec oruca-mysql sh -c \
+        "mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > /backups/backup-$$(date +%Y%m%d-%H%M%S).sql"
+    @echo "✅ Backup created in OruCa mysql volume's /backups directory."
+
+# OruCaのDBバックアップをリストアします (例: just OruCa::restore backup-YYYYMMDD.sql)
+# (OruCa/Makefile の 'restore-backup' から移植)
+restore BACKUP_FILE:
+    @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_FILE}}..."
+    @docker compose exec -T oruca-mysql sh -c \
+        "mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} < /backups/{{BACKUP_FILE}}"
+    @echo "✅ Restore complete."

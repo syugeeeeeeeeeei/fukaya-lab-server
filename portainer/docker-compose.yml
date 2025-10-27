@@ -15,11 +15,3 @@ services:
       caddy: portainer.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 9000}}"
       caddy.tls: "internal"
-
-networks:
-  fukaya-lab-network:
-    external: true
-    name: fukaya-lab-network
-
-volumes:
-  portainer_data:

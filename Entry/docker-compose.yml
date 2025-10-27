@@ -47,16 +47,3 @@ services:
       caddy: dns.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 3000}}"
       caddy.tls: "internal"
-
-networks:
-  fukaya-lab-network:
-    driver: bridge
-    name: fukaya-lab-network
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24 # 👈 ネットワークの範囲を定義
-
-volumes:
-  caddy_data:
-  adguard_work:
-  adguard_conf:

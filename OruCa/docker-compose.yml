@@ -49,8 +49,6 @@ services:
         MYSQL_ROOT_PASSWORD : ${MYSQL_ROOT_PASSWORD}
     container_name: oruca-mysql
     restart: unless-stopped
-    env_file:
-      - .env
     cap_add:
       - SYS_NICE
     volumes:
@@ -75,8 +73,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./api:/app:rw
-    env_file: # DATABASE_URLは.envファイルまたはアプリケーションコード内で設定される想定
-      - .env
     command: ["yarn","start"]
     depends_on:
       mysql:
@@ -107,9 +103,3 @@ services:
 networks:
   default : # リバースプロキシのdocker-compose.ymlで定義・作成されるネットワークを参照
     driver: bridge
-  fukaya-lab-network:
-    external: true
-    name: fukaya-lab-network
-
-volumes:
-  mysql_data: {}

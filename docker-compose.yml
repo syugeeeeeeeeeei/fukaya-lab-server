@@ -1,0 +1,53 @@
+# /fukaya-lab-server/docker-compose.yml (新規作成)
+# -----------------------------------------------------------------
+#  プロジェクト全体のオーケストレーションファイル
+# -----------------------------------------------------------------
+#  実行コマンド例:
+#    本番起動: docker-compose --profile prod up -d
+#    開発起動: docker-compose --profile dev up -d
+# -----------------------------------------------------------------
+services:
+  # このファイルはオーケストレーションに専念するため、
+  # サービス定義は各サブディレクトリのファイルをインクルードする
+  # ことで読み込む。
+  #
+  # 注意: AppFlowy は network_mode: host であり、
+  #      ProjectBotany はテンプレート のため、
+  #      ここでは起動対象に含めない。
+  all-services:
+    image: alpine:latest
+    command: ["echo", "This is a dummy service to ensure docker-compose validates. Do not run."]
+    profiles: ["donotrun"]
+
+include:
+  - path: ./Entry/docker-compose.yml
+  - path: ./OruCa/docker-compose.yml
+  - path: ./homepage/docker-compose.yml
+  - path: ./portainer/docker-compose.yml
+  - path: ./gitlab/docker-compose.yml
+
+# -----------------------------------------------------------------
+#  ネットワークとボリュームの一元管理
+# -----------------------------------------------------------------
+
+networks:
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network
+
+volumes:
+  # Entry サービス用
+  caddy_data:
+  adguard_work:
+  adguard_conf:
+
+  # OruCa サービス用
+  mysql_data:
+
+  # Portainer サービス用
+  portainer_data:
+
+  # GitLab サービス用
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

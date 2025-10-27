@@ -19,8 +19,3 @@ services:
       caddy.tls: "internal"
     tty: true
     stdin_open: true
-
-networks:
-  fukaya-lab-network:
-    external: true
-    name: fukaya-lab-network
