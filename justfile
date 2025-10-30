@@ -35,7 +35,15 @@ up-dev:
 # 全てのサービスを停止します
 down:
     @echo "🛑 Stopping all services..."
-    @docker compose down
+    @# 開発/本番プロファイルで起動したサービスも確実に停止・削除するため、プロファイルを明示
+    @docker compose --profile dev --profile prod down
+
+# 全てのサービスを停止し、関連するボリュームも削除します
+# 💥 警告: 関連する名前付きボリュームのデータが消去されます！
+down-v:
+    @echo "💣 Stopping all services and REMOVING ASSOCIATED VOLUMES..."
+    @echo "   (Data will be lost!)"
+    @docker compose --profile dev --profile prod down -v
 
 # 指定したサービスを再起動します (例: just restart oruca-api)
 restart *ARGS:
@@ -73,9 +81,9 @@ rebuild *ARGS:
         exit 1; \
     fi
     @echo "💣 WARNING: Rebuilding services {{ARGS}} and REMOVING ASSOCIATED VOLUMES..."
-    @echo "   (Data will be lost for these services!)"
+    @echo "   (Data will be lost for these services!)"
     @docker compose down -v {{ARGS}}
-    @echo "   (Services stopped and volumes removed. Now recreating with build...)"
+    @echo "   (Services stopped and volumes removed. Now recreating with build...)"
     @docker compose up -d --build {{ARGS}}
     @echo "✅ Services {{ARGS}} have been rebuilt."
 
@@ -86,9 +94,9 @@ rebuild *ARGS:
 net-create:
     @echo "🌐 Creating persistent 'fukaya-lab-network'..."
     @docker network create \
-      --driver=bridge \
-      --subnet=172.20.0.0/24 \
-      fukaya-lab-network || echo "INFO: Network 'fukaya-lab-network' already exists."
+      --driver=bridge \
+      --subnet=172.20.0.0/24 \
+      fukaya-lab-network || echo "INFO: Network 'fukaya-lab-network' already exists."
 
 # (初回のみ) .env ファイルを .env.example からコピーします
 init-env:

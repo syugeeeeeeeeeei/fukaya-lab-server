@@ -5,7 +5,10 @@
 build:
     @echo "🛠️ Building OruCa frontend application..."
     # 'vite' コンテナを使ってビルドを実行
-    @docker compose --profile dev run --rm vite yarn build
+    # ルートの docker-compose.yml も読み込むよう修正
+    @docker compose \
+        -f ../docker-compose.yml \
+        --profile dev run --rm vite yarn build
     @echo "✅ OruCa Frontend built to ./vite/dist/"
 
 

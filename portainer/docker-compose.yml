@@ -14,4 +14,4 @@ services:
     labels:
       caddy: portainer.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 9000}}"
-      caddy.tls: "internal"
+      # caddy.tls: "internal"
