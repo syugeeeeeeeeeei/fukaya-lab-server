@@ -6,8 +6,7 @@ build:
     @echo "🛠️ Building OruCa frontend application..."
     # 'vite' コンテナを使ってビルドを実行
     # ルートの docker-compose.yml も読み込むよう修正
-    @docker compose \
-        -f ../docker-compose.yml \
+    @docker compose -f ../docker-compose.yml \
         --profile dev run --rm oruca-vite yarn build
     @echo "✅ OruCa Frontend built to ./vite/dist/"
 
@@ -22,19 +21,17 @@ usb:
     @powershell.exe -ExecutionPolicy Bypass -File ./usb-wsl-attach.ps1
     @echo "✅ USB device attached."
 
-# OruCaのDBバックアップを保存します
-# (OruCa/Makefile の 'save-backup' から移植)
+# OruCaのDBバックアップを保存します(例: just OruCa::backup)
 backup:
     @echo "💾 Saving OruCa MySQL backup..."
     @# ルートの 'set export' により $MYSQL_USER 等が環境変数として利用可能です
-    @docker compose exec oruca-mysql sh -c \
-        "mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > /backups/backup-$$(date +%Y%m%d-%H%M%S).sql"
+    @docker compose -f ../docker-compose.yml \
+        exec oruca-mysql sh -c "mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
     @echo "✅ Backup created in OruCa mysql volume's /backups directory."
 
-# OruCaのDBバックアップをリストアします (例: just OruCa::restore backup-YYYYMMDD.sql)
-# (OruCa/Makefile の 'restore-backup' から移植)
-restore BACKUP_FILE:
-    @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_FILE}}..."
-    @docker compose exec -T oruca-mysql sh -c \
-        "mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} < /backups/{{BACKUP_FILE}}"
+# OruCaのDBバックアップをリストアします (例: just OruCa::restore YYYYMMDD-HHMMSS)
+restore BACKUP_DATE:
+    @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_DATE}}..."
+    @docker compose -f ../docker-compose.yml \
+        exec -T oruca-mysql sh -c "mysql -u'root' -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /backups/{{BACKUP_DATE}}/backup.sql"
     @echo "✅ Restore complete."

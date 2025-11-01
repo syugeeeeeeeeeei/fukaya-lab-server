@@ -54,6 +54,7 @@ services:
     volumes:
       - ./mysql/data/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+      - ./mysql/backups:/backups
     # ports: # 外部から直接DBにアクセスしない場合はコメントアウト推奨
       # - "3306:3306"
     healthcheck:

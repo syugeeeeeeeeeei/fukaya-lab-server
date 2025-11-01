@@ -16,14 +16,14 @@ mod Entry
 # OruCa::build は、OruCa/justfile 内の 'build' タスクを指します。
 # [parallel] 属性により、OruCa::build や将来追加するタスクが並列実行されます。
 [parallel]
-build: OruCa::build
+_build: OruCa::build
     @echo "✅ All required services built."
 
 
 # --- 🚀 プロジェクト基本操作 ---
 
 # [本番] 全サービスをビルドし、全てのサービスを起動します
-up-prod: build
+up-prod: _build
     @echo "🚀 Starting all production services..."
     @docker compose --profile prod up -d --build
 
@@ -91,7 +91,7 @@ rebuild *ARGS:
 # --- 🛠️ 初回セットアップ ---
 
 # (初回のみ) 永続ネットワーク 'fukaya-lab-network' を作成します
-net-create:
+_net-create:
     @echo "🌐 Creating persistent 'fukaya-lab-network'..."
     @docker network create \
       --driver=bridge \
@@ -99,7 +99,7 @@ net-create:
       fukaya-lab-network || echo "INFO: Network 'fukaya-lab-network' already exists."
 
 # (初回のみ) .env ファイルを .env.example からコピーします
-init-env:
+_init-env:
     @if [ ! -f .env ]; then \
         echo "📄 Creating .env file from .env.example ..."; \
         cp .env.example .env; \
@@ -108,7 +108,7 @@ init-env:
     fi
 
 # プロジェクトの初回セットアップ (ネットワーク作成 + .env準備)
-setup: net-create init-env
+setup: _net-create _init-env
     @echo "🎉 Initial setup complete. Please edit .env file if necessary."
 
 
