@@ -24,7 +24,8 @@ include:
   - path: ./OruCa/docker-compose.yml
   - path: ./homepage/docker-compose.yml
   - path: ./portainer/docker-compose.yml
-  - path: ./gitlab/docker-compose.yml
+  # - path: ./gitlab/docker-compose.yml
+  - path: ./ProjectBotany/docker-compose.yml
 
 # -----------------------------------------------------------------
 #  ネットワークとボリュームの一元管理
