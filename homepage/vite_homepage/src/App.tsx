@@ -51,6 +51,13 @@ const services: Service[] = [
     enabled: true,
   },
   {
+    emoji: '🌺',
+    name: 'Project Botany',
+    url: 'https://projectbotany.app.fukaya-sus.lab',
+    description: '植物対戦ゲーム',
+    enabled: true,
+  },
+  {
     emoji: '📝',
     name: 'AppFlowy',
     url: 'https://appflowy.fukaya-sus.lab',
