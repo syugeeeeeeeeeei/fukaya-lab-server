@@ -51,4 +51,4 @@ services:
     labels:
       caddy: dns.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 3000}}"
-      # caddy.tls: "internal"
+      caddy.tls: "internal"

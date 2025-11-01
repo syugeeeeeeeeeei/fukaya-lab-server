@@ -59,7 +59,7 @@ logs *ARGS:
     @docker compose logs -f {{ARGS}}
 
 # 実行中のサービス名リストを表示します
-ps:
+ls:
     @echo "📋 Currently running services:"
     @docker compose ps --services
 
