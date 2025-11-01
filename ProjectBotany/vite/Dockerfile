@@ -33,8 +33,7 @@ COPY package.json .yarnrc.yml ./
 # prodステージでもcorepackを有効化
 RUN corepack enable && yarn set version stable
 
-COPY .
-.
+COPY . .
 
 # 本番環境でも依存関係を再インストールする
 # devDependenciesも含めてインストールするために、productionフラグを付けない
@@ -42,10 +41,6 @@ RUN yarn install
 
 # 👈 [追加] アプリケーションをビルド
 RUN yarn build
-
-# 👈 [追加] ビルド結果を配信するため serve をインストール
-# (package.json の "start" スクリプト で "serve" が使われているため)
-RUN yarn global add serve
 
 # 👈 [追加] コンテナ起動時のデフォルトコマンドを指定
 CMD ["yarn", "start"]

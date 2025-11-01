@@ -1,6 +1,6 @@
 services:
  # 開発用 Vite
-  vite:
+  oruca-vite:
     build:
       context: ./vite
       dockerfile: Dockerfile
@@ -17,7 +17,7 @@ services:
       - "dev"
 
   # 本番用 Nginx
-  web:
+  oruca-web:
     build:
       context: web
     container_name: oruca-web
@@ -26,7 +26,7 @@ services:
     volumes:
       - ./vite/dist:/usr/share/nginx/html:ro
     depends_on:
-      - api # apiがmysqlに依存するため、これでmysql起動後になる
+      - oruca-api # apiがmysqlに依存するため、これでmysql起動後になる
     networks:
       - default
       - fukaya-lab-network
@@ -36,10 +36,10 @@ services:
     labels:
       caddy: oruca.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 80}}"
-      # caddy.tls: "internal"
+      caddy.tls: "internal"
 
   # mysql
-  mysql:
+  oruca-mysql:
     build:
       context: mysql
     container_name: oruca-mysql
@@ -65,7 +65,7 @@ services:
     networks:
       - default
 
-  api:
+  oruca-api:
     build:
       context: ./api
       dockerfile: Dockerfile
@@ -81,12 +81,12 @@ services:
       - ./api:/app:rw
     command: ["yarn","start"]
     depends_on:
-      mysql:
+      oruca-mysql:
         condition: service_healthy
     networks:
       - default
 
-  nfc:
+  oruca-nfc:
     container_name: oruca-nfc
     build:
       context: nfc
@@ -98,7 +98,7 @@ services:
       - TZ=Asia/Tokyo
     command: ["python","main.py"]
     depends_on:
-      mysql: # nfcサービスもmysqlに依存する場合
+      oruca-mysql: # nfcサービスもmysqlに依存する場合
         condition: service_healthy
     devices:
       - "/dev/bus/usb:/dev/bus/usb"

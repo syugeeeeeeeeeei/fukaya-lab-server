@@ -8,7 +8,7 @@ build:
     # ルートの docker-compose.yml も読み込むよう修正
     @docker compose \
         -f ../docker-compose.yml \
-        --profile dev run --rm vite yarn build
+        --profile dev run --rm oruca-vite yarn build
     @echo "✅ OruCa Frontend built to ./vite/dist/"
 
 

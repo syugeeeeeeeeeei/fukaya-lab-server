@@ -29,11 +29,11 @@ interface IDBConfig extends mysql.PoolOptions {
 
 export const SERVER_CONFIG:IServerConfig = {
 	port:3000,
-	host:"api"
+	host:"oruca-api"
 }
 
 export const DB_CONFIG:IDBConfig = {
-	host: 'mysql', // Docker Compose内でのサービス名を使用
+	host: 'oruca-mysql', // Docker Compose内でのサービス名を使用
 	user: getEnv("MYSQL_USER"),
 	password: getEnv("MYSQL_PASSWORD"),
 	database: getEnv("MYSQL_DATABASE"),

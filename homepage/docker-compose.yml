@@ -16,6 +16,6 @@ services:
     labels:
       caddy: fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 4000}}"
-      # caddy.tls: "internal"
+      caddy.tls: "internal"
     tty: true
     stdin_open: true

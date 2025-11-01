@@ -8,7 +8,7 @@ import time
 
 
 SYSTEM_CODE = 0xFE00  # FeliCaのサービスコード
-API_URL = "http://api:3000/log/write"  # HTTP POST先のURL
+API_URL = "http://oruca-api:3000/log/write"  # HTTP POST先のURL
 
 def update_log(student_ID: str):
     send_data = {
