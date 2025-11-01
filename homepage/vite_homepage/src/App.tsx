@@ -92,9 +92,9 @@ const sshInfo: SshInfo = {
   name: 'SSHアクセス',
   user: 'amoeba',
   host: 'ssh.fukaya-sus.lab',
-  ip: '192.168.10.225',
+  ip: '192.168.11.225',
   command: 'ssh amoeba@ssh.fukaya-sus.lab',
-  commandIp: 'ssh amoeba@192.168.10.225',
+  commandIp: 'ssh amoeba@192.168.11.225',
   password: 'fukayalab942',
 };
 
