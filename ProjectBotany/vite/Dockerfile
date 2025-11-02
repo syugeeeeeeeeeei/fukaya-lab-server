@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package.json .yarnrc.yml ./
 
 # corepackを有効にし、yarnの安定版をインストール
-RUN corepack enable && yarn set version stable
+RUN corepack enable
 
 # 依存関係をインストール
 RUN yarn install
@@ -31,7 +31,7 @@ WORKDIR /app
 COPY package.json .yarnrc.yml ./
 
 # prodステージでもcorepackを有効化
-RUN corepack enable && yarn set version stable
+RUN corepack enable
 
 COPY . .
 

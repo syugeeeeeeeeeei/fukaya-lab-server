@@ -12,6 +12,9 @@ export default defineConfig({
     hmr: {
       port: 5173,
     },
+    allowedHosts: [
+      'projectbotany.app.fukaya-sus.lab'
+    ],
     // ✨ watchオプションを追加してポーリングを有効化
     watch: {
       usePolling: true,
@@ -28,9 +31,9 @@ export default defineConfig({
       },
     },
   },
-  test: {
-    globals: true,
-    environment: 'happy-dom', // DOMをシミュレートする環境
-    setupFiles: './src/setupTests.ts', // テスト実行前に読み込むファイル
-  },
+  // test: {
+  //   globals: true,
+  //   environment: 'happy-dom', // DOMをシミュレートする環境
+  //   setupFiles: './src/setupTests.ts', // テスト実行前に読み込むファイル
+  // },
 })
