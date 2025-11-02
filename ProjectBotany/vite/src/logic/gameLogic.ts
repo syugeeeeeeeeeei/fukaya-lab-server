@@ -24,7 +24,7 @@ import type {
 const GAME_SETTINGS = {
 	FIELD_WIDTH: 7,
 	FIELD_HEIGHT: 10,
-	MAXIMUM_TURNS: 8,
+	MAXIMUM_TURNS: 6,
 };
 
 // --- 型安全なセル生成ヘルパー関数 ---

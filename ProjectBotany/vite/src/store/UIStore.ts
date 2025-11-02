@@ -9,7 +9,7 @@ import type { CellState, GameState, PlayerState, PlayerType } from '../types/dat
 const GAME_SETTINGS = {
 	FIELD_WIDTH: 7,
 	FIELD_HEIGHT: 10,
-	MAXIMUM_TURNS: 8,
+	MAXIMUM_TURNS: 6,
 };
 /** カードプレビュー時のコマの初期表示位置 */
 const DEFAULT_PREVIEW_POSITION = { x: 3, y: 5 };
@@ -85,7 +85,7 @@ const createInitialUIState = (): UIState => ({
 const createInitialPlayerState = (id: PlayerType, name: string): PlayerState => {
 	// ハンデとして在来種側の初期エンバイロメントを多めに設定
 	const isHandicapPlayer = id === 'native';
-	const initialEnv = isHandicapPlayer ? 2 : 1;
+	const initialEnv = isHandicapPlayer ? 1 : 1;
 
 	return {
 		playerId: id,
