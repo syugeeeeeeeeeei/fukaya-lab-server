@@ -69,11 +69,14 @@ const cardMasterData: CardDefinition[] = [
 		deckCount: 1,
 		imagePath: "/plants/ミズバショウ.png",
 		targeting: {
-			power: 1,
+			power: 2,
 			shape: "range",
 		},
 		cooldownTurns: 1,
 		canGrow: false,
+		growthConditions: [{ type: "turns_since_last_action", value: 1 }],
+		growthEffects: [{ newInvasionPower: 3}],
+
 	},
 	{
 		id: "alien-5",
@@ -89,7 +92,7 @@ const cardMasterData: CardDefinition[] = [
 			shape: "cross",
 		},
 		cooldownTurns: 1,
-		usageLimit: 2,
+		usageLimit: 3,
 		canGrow: false,
 	},
 	{
@@ -102,13 +105,12 @@ const cardMasterData: CardDefinition[] = [
 		deckCount: 1,
 		imagePath: "/plants/アレチウリ.png",
 		targeting: {
-			power: 2,
+			power: 3,
 			shape: "range",
 		},
-		canGrow: true,
+		cooldownTurns: 1,
+		canGrow: false,
 		usageLimit: 2,
-		growthConditions: [{ type: "turns_since_last_action", value: 2 }],
-		growthEffects: [{ newInvasionPower: 3 }],
 	},
 	// --- 駆除カード ---
 	{

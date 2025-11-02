@@ -16,10 +16,11 @@ services:
     networks:
       - fukaya-lab-network # 👈 [変更] 共通ネットワークに変更
     restart: unless-stopped
+    command: ["yarn", "dev"]
     labels:
       # 👈 [追加] Caddy の設定
       caddy: projectbotany.app.fukaya-sus.lab # ドメイン名
-      caddy.reverse_proxy: "{{upstreams 8080}}" # package.json の "start" ポート
+      caddy.reverse_proxy: "{{upstreams 5173}}" # package.json の "start" ポート
       caddy.tls: "internal"
     profiles: ["prod"] # 👈 [追加] prod プロファイルでのみ起動
 
