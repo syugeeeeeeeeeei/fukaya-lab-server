@@ -34,9 +34,9 @@ services:
     profiles:
       - "prod"
     labels:
-      caddy: oruca.fukaya-sus.lab
+      caddy: http://oruca.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 80}}"
-      caddy.tls: "internal"
+      # caddy.tls: "internal"
 
   # mysql
   oruca-mysql:

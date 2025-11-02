@@ -4,7 +4,7 @@ services:
     container_name: portainer
     expose:
       - "9000" # Portainerがリッスンするポート (HTTPの場合)
-      - "9443" # Portainerがリッスンするポート (HTTPの場合)
+      - "9443" # Portainerがリッスンするポート (HTTPSの場合)
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -12,6 +12,5 @@ services:
     networks:
       - fukaya-lab-network
     labels:
-      caddy: portainer.fukaya-sus.lab
+      caddy: http://portainer.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 9000}}"
-      caddy.tls: "internal"

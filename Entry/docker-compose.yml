@@ -14,6 +14,14 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - caddy_data:/data
+    # labels:
+    #   # グローバルオプション：全サイトで内部CAを有効にする (tls internal と同義)
+    #   caddy.local_certs: 
+    #   # グローバルオプション：ワイルドカード証明書が利用可能な場合、優先して使用する
+    #   caddy.auto_https: prefer_wildcard      
+    #   # ダミーのサイトブロックを定義し、ワイルドカード証明書をCaddyに発行させる
+    #   caddy_1: "http://*.fukaya-sus.lab"
+    #   caddy_1.respond: "Wildcard Fallback 200" # 👈 万が一アクセスされた場合の応答
 
   # 👑 CoreDNS - Primary DNS Resolver
   coredns:
@@ -49,6 +57,6 @@ services:
       - adguard_work:/opt/adguardhome/work
       - adguard_conf:/opt/adguardhome/conf
     labels:
-      caddy: dns.fukaya-sus.lab
+      caddy: http://dns.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 3000}}"
-      caddy.tls: "internal"
+      # caddy.tls: "internal"

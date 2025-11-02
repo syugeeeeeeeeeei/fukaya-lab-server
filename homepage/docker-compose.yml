@@ -14,8 +14,7 @@ services:
       - fukaya-lab-network
     command: ["yarn","dev"]
     labels:
-      caddy: fukaya-sus.lab
+      caddy: http://fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 4000}}"
-      caddy.tls: "internal"
     tty: true
     stdin_open: true

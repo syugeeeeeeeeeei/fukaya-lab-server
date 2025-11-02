@@ -19,9 +19,9 @@ services:
     command: ["yarn", "dev"]
     labels:
       # 👈 [追加] Caddy の設定
-      caddy: projectbotany.app.fukaya-sus.lab # ドメイン名
+      caddy: http://projectbotany.app.fukaya-sus.lab # ドメイン名
       caddy.reverse_proxy: "{{upstreams 5173}}" # package.json の "start" ポート
-      caddy.tls: "internal"
+      # caddy.tls: "internal"
     profiles: ["prod"] # 👈 [追加] prod プロファイルでのみ起動
 
   # -----------------------------------------------------------
@@ -45,7 +45,7 @@ services:
       # 👈 [追加] Caddy の設定 (開発用)
       caddy: projectbotany.app.fukaya-sus.lab # 開発用ドメイン
       caddy.reverse_proxy: "{{upstreams 5173}}" # Vite 開発サーバーのデフォルトポート
-      caddy.tls: "internal"
+      # caddy.tls: "internal"
     profiles: ["dev"] # 👈 [追加] dev プロファイルでのみ起動
 
 networks:
