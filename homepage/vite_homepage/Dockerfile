@@ -15,6 +15,6 @@ ENV PATH=/node_modules/.bin:$PATH
 
 # 依存関係をインストール
 # ※イメージにすでにyarnは入ってる
-RUN yarn install
+RUN yarn install --modules-folder=/node_modules
 
 EXPOSE 4000
