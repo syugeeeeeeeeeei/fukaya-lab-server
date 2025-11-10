@@ -15,6 +15,7 @@ export class DatabaseHandler {
 			waitForConnections: config.waitForConnections,
 			queueLimit: config.queueLimit,
 			connectTimeout: config.connectTimeout,
+			timezone: "+09:00",
 		});
 	}
 
@@ -79,6 +80,19 @@ export class DatabaseHandler {
 		const sql = "CALL update_student_name(?, ?)";
 		try {
 			await this.pool.query(sql, [studentID, studentName]);
+		} catch (err) {
+			console.error("SQL実行エラー (updateStudentName):", err);
+			throw err;
+		}
+	}
+
+	/**
+	 * 指定された student_ID の学生を削除します。
+	 */
+	public async deleteStudent(student_ID: string): Promise<void> {
+		const sql = `DELETE FROM users WHERE student_ID = ?;`;
+		try {
+			await this.pool.query(sql, [student_ID]);
 		} catch (err) {
 			console.error("SQL実行エラー (updateStudentName):", err);
 			throw err;

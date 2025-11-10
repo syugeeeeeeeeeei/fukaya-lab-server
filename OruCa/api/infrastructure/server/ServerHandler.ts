@@ -4,7 +4,7 @@ import { HttpHandler } from "@infra/server/http/HttpHandler";
 import { WebSocketHandler } from "@infra/server/websocket/WebSocketHandler";
 import express from 'express';
 import * as http from "http";
-import * as cron from "node-cron"; // 変更: node-cron をインポート
+import * as cron from "node-cron"; // node-cron をインポート
 // import mysql from "mysql2/promise"; // 不要
 
 export class ServerHandler {
@@ -31,7 +31,7 @@ export class ServerHandler {
 			this.webSocketHandler.broadcastData.bind(this.webSocketHandler)
 		);
 
-		// 変更: 日次リセットタスクをスケジュール
+		// 日次リセットタスクをスケジュール
 		this.scheduleDailyReset();
 	}
 
@@ -39,15 +39,14 @@ export class ServerHandler {
 		return this.httpServer;
 	}
 
-	// 変更: ここから追加
 	/**
-	 * 毎日 00:00 (JST) に全ユーザーを退室させる Cron ジョブをスケジュールします。
+	 * 毎日 22:00 (JST) に全ユーザーを退室させる Cron ジョブをスケジュールします。
 	 */
 	private scheduleDailyReset() {
-		// '0 0 0 * * *' = 毎日 0時0分0秒
+		// '0 0 22 * * *' = 毎日 22時0分0秒
 		// タイムゾーンを 'Asia/Tokyo' に指定
 		cron.schedule(
-			"0 0 0 * * *",
+			"0 0 22 * * *", // 変更: 0時 から 22時 に変更
 			async () => {
 				console.log(
 					"Running daily reset task: setting all users to out of room..."
@@ -75,7 +74,6 @@ export class ServerHandler {
 			}
 		);
 
-		console.log("Daily reset task scheduled for 00:00 JST.");
+		console.log("Daily reset task scheduled for 22:00 JST."); // 変更: ログメッセージを 22:00 に修正
 	}
-	// 変更: ここまで追加
 }

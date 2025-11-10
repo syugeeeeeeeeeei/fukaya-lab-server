@@ -78,6 +78,7 @@ services:
       MYSQL_PASSWORD : ${MYSQL_PASSWORD}
       SLACK_BOT_TOKEN : ${SLACK_BOT_TOKEN}
       SLACK_CHANNEL_ID : ${SLACK_CHANNEL_ID}
+      TZ: Asia/Tokyo
     volumes:
       - ./api:/app:rw
     command: ["yarn","start"]
