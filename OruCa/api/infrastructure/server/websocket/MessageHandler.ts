@@ -6,12 +6,10 @@ import { sendWsMessage } from "@src/utils";
 import { WebSocket, WebSocketServer } from "ws";
 import { z } from "zod"; // 'zod' のインポート
 
-// Zod スキーマを定義
+// (1) フロントエンド (Admin UI 等) からのペイロード用 (シンプル)
 const StudentIdPayload = z.object({
 	student_ID: z.string(),
 });
-
-const LogWritePayload = StudentIdPayload;
 
 const AuthPayload = z.object({
 	student_ID: z.string(),
@@ -21,6 +19,14 @@ const AuthPayload = z.object({
 const UpdateNamePayload = z.object({
 	student_ID: z.string(),
 	student_Name: z.string(),
+});
+
+// (2) NFCリーダー (main.py) からの 'log/write' ペイロード用 (ネスト)
+// 変更: 'log/write' 専用のスキーマを定義
+const LogWritePayload = z.object({
+	content: z.object({
+		student_ID: z.string(),
+	}),
 });
 
 
@@ -95,7 +101,7 @@ export class MessageHandler {
 		try {
 			// Zod スキーマでペイロードを検証
 			const payload = LogWritePayload.parse(data.payload);
-			const studentID = payload.student_ID;
+			const studentID = payload.content.student_ID;
 
 			// 変更: DataBaseHandler のメソッドを直接呼び出す
 			await this.dbHandler.insertOrUpdateLog(studentID);
@@ -129,9 +135,6 @@ export class MessageHandler {
 			await this.broadcastData();
 
 		} catch (error) {
-			// Zod のパースエラーや DB エラーをキャッチ
-			console.error("ログ書き込みまたはブロードキャストエラー (handleLogWrite):", error);
-
 			// エラー発生時に、受信したペイロードをログに出力
 			console.error(
 				"ログ書き込みまたはブロードキャストエラー (handleLogWrite):",

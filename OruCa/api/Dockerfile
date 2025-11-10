@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # gitをインストール
-RUN apk update && apk add --no-cache git
+RUN apk update && apk add --no-cache git curl
 
 # 作業ディレクトリを設定
 WORKDIR /app
