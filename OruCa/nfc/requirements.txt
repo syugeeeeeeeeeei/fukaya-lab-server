@@ -1,3 +1,4 @@
 nfcpy
 requests
 websockets
+websocket
