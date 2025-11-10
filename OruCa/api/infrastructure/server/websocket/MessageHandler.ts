@@ -3,12 +3,17 @@ import { DatabaseHandler } from "@infra/database/DataBaseHandler";
 import { SlackService } from "@infra/integrations/SlackServive";
 import { TWsMessage } from "@src/config";
 import { sendWsMessage } from "@src/utils";
+import { createHash } from "crypto"; // 変更: crypto をインポート
 import { WebSocket, WebSocketServer } from "ws";
 import { z } from "zod"; // 'zod' のインポート
 
 // (1) フロントエンド (Admin UI 等) からのペイロード用 (シンプル)
 const StudentIdPayload = z.object({
-	student_ID: z.string(),
+	content: z.array(
+		z.object({
+			student_ID: z.string(),
+		})
+	)
 });
 
 const AuthPayload = z.object({
@@ -21,10 +26,12 @@ const AuthPayload = z.object({
 });
 
 const UpdateNamePayload = z.object({
-	content: z.object({
-		student_ID: z.string(),
-		student_Name: z.string(),
-	}),
+	content: z.array(
+		z.object({
+			student_ID: z.string(),
+			student_Name: z.string(),
+		})
+	)
 });
 
 // (2) NFCリーダー (main.py) からの 'log/write' ペイロード用 (ネスト)
@@ -87,7 +94,7 @@ export class MessageHandler {
 	// 'log/fetch' の処理
 	private async handleFetchLogs(ws: WebSocket, data: TWsMessage): Promise<void> {
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}`);
 
 			const logs = await this.fetchLogs();
@@ -114,7 +121,7 @@ export class MessageHandler {
 	private async handleLogWrite(ws: WebSocket, data: TWsMessage): Promise<void> {
 
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}, payload: ${JSON.stringify(data.payload)}`);
 
 			// Zod スキーマでペイロードを検証
@@ -173,22 +180,51 @@ export class MessageHandler {
 	// 'user/auth' の処理
 	private async handleUserAuth(ws: WebSocket, data: TWsMessage): Promise<void> {
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}, payload: ${JSON.stringify(data.payload)}`);
 
 			// Zod スキーマでペイロードを検証
 			const payload = AuthPayload.parse(data.payload);
 
-			const storedToken = await this.dbHandler.getStudentToken(payload.content[0].student_ID);
+			// 変更: ここから認証ロジックをご提示いただいた過去のコードに修正
+			// admin_pass は init.sql と同じ値
+			const admin_pass = 'fukaya_lab';
 
-			// 認証の処理がおかしい
-			if (storedToken && storedToken === payload.content[0].password) {
+			// AuthPayload は配列 (array) を含むため、最初の要素 [0] を使用
+			const { student_ID, password } = payload.content[0];
+
+			// 1. DBから保存されているトークンを取得
+			const storedToken = await this.dbHandler.getStudentToken(student_ID);
+			if (!storedToken) {
+				// ユーザーが存在しないか、トークンがない
+				sendWsMessage(ws, {
+					type: "user/auth",
+					payload: { result: false, content: [], message: "学籍番号またはトークンが異なります" }
+				});
+				return;
+			}
+
+			// 2. init.sql と同じロジックで、クライアントから送られたパスワードをハッシュ化
+			const generateSHA256Hash = (input: string): string => createHash("sha256").update(input).digest("hex");
+
+			// 3. Salt を生成 (init.sql と同じロジック)
+			const salt = generateSHA256Hash(student_ID);
+
+			// 4. 期待されるトークンを生成 (init.sql と同じロジック)
+			// (password はクライアントから送られた平文の admin_pass)
+			const expectedToken = generateSHA256Hash(`${student_ID}${password}${salt}`);
+
+			// 5. DBのトークンと期待されるトークンを比較
+			const isValid = storedToken === expectedToken;
+
+			if (isValid) {
 				// 認証成功
 				sendWsMessage(ws, {
 					type: "user/auth",
 					payload: {
 						result: true,
-						content: [{ student_ID: payload.content[0].student_ID, token: storedToken }],
+						// 認証成功時は、DBから取得したハッシュ済みのトークンを返す
+						content: [{ student_ID: student_ID, token: storedToken }],
 						message: "認証成功"
 					}
 				});
@@ -199,6 +235,7 @@ export class MessageHandler {
 					payload: { result: false, content: [], message: "学籍番号またはトークンが異なります" }
 				});
 			}
+			// 変更: 認証ロジックここまで
 
 		} catch (error) {
 			// エラー発生時に、受信したペイロードをログに出力
@@ -218,17 +255,17 @@ export class MessageHandler {
 	// 'user/update_name' の処理
 	private async handleUpdateName(ws: WebSocket, data: TWsMessage): Promise<void> {
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}, payload: ${JSON.stringify(data.payload)}`);
 
 			// Zod スキーマでペイロードを検証
 			const payload = UpdateNamePayload.parse(data.payload);
 
-			await this.dbHandler.updateStudentName(payload.content.student_ID, payload.content.student_Name);
+			await this.dbHandler.updateStudentName(payload.content[0].student_ID, payload.content[0].student_Name);
 
 			// クライアントに成功 ACK を返す
 			sendWsMessage(ws, {
-				type: "ack",
+				type: "user/update_name",
 				payload: { result: true, content: [], message: "氏名更新成功" }
 			});
 
@@ -244,7 +281,7 @@ export class MessageHandler {
 				JSON.stringify(data.payload) // JSON文字列としてログ出力
 			);
 			sendWsMessage(ws, {
-				type: "ack",
+				type: "user/update_name",
 				payload: { result: false, content: [], message: `氏名更新失敗: ${error instanceof Error ? error.message : "不明なエラー"}` }
 			});
 		}
@@ -253,20 +290,20 @@ export class MessageHandler {
 	// 'user/fetchToken' の処理
 	private async handleFetchToken(ws: WebSocket, data: TWsMessage): Promise<void> {
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}, payload: ${JSON.stringify(data.payload)}`);
 
 			// Zod スキーマでペイロードを検証
 			const payload = StudentIdPayload.parse(data.payload);
 
-			const token = await this.dbHandler.getStudentToken(payload.student_ID);
+			const token = await this.dbHandler.getStudentToken(payload.content[0].student_ID);
 
 			if (token) {
 				sendWsMessage(ws, {
 					type: "user/fetchToken",
 					payload: {
 						result: true,
-						content: [{ student_ID: payload.student_ID, token: token }],
+						content: [{ student_ID: payload.content[0].student_ID, token: token }],
 						message: "トークン取得成功"
 					}
 				});
@@ -295,21 +332,21 @@ export class MessageHandler {
 	// 'user/delete' の処理
 	private async handleDeleteUser(ws: WebSocket, data: TWsMessage): Promise<void> {
 		try {
-			// 変更: 正常系ログを追加
+			// 正常系ログを追加
 			console.log(`[REQ] type: ${data.type}, payload: ${JSON.stringify(data.payload)}`);
 
 			// Zod スキーマでペイロードを検証
 			const payload = StudentIdPayload.parse(data.payload);
 
-			// 変更: DataBaseHandler.ts に追加したメソッドを呼び出す
-			await this.dbHandler.deleteStudent(payload.student_ID);
+			// DataBaseHandler.ts に追加したメソッドを呼び出す
+			await this.dbHandler.deleteStudent(payload.content[0].student_ID);
 
 			sendWsMessage(ws, {
-				type: "ack",
+				type: "user/delete",
 				payload: { result: true, content: [], message: "ユーザー削除成功" }
 			});
 
-			// 変更: ユーザー削除後にもブロードキャスト
+			// ユーザー削除後にもブロードキャスト
 			await this.broadcastData();
 
 		} catch (error) {
@@ -321,7 +358,7 @@ export class MessageHandler {
 				JSON.stringify(data.payload) // JSON文字列としてログ出力
 			);
 			sendWsMessage(ws, {
-				type: "ack",
+				type: "user/delete",
 				payload: { result: false, content: [], message: `ユーザー削除処理エラー: ${error instanceof Error ? error.message : "不明なエラー"}` }
 			});
 		}
