@@ -5,6 +5,7 @@ import { Table } from '@chakra-ui/react';
 import Badge from '@components/Badge';
 import GenericDataTable, { ColumnDefinition, getDefaultCellStyles } from '@components/GenericDataTable';
 import * as dateFns from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz'; // 変更: date-fns-tz をインポート
 import { useEffect, useRef, useState } from 'react';
 
 // DataTable コンポーネント
@@ -112,8 +113,11 @@ function DataTable() {
 }
 
 function formatTime(isoString: string) {
+	// 変更: サーバーからの時刻 (UTCと仮定) を日本時間 (JST) に変換し、フォーマットを 'HH:mm' に変更
 	const date = dateFns.parseISO(isoString);
-	return dateFns.format(date, 'HH:mm:ss'); // JSTの時分秒をフォーマット
+	const timeZone = 'Asia/Tokyo';
+	// サーバーの時刻がUTCであることを前提にJSTへ変換
+	return formatInTimeZone(date, timeZone, 'HH時mm分ss秒');
 }
 
 function playBeep(hz: number, volume: number, length: number) {

@@ -1,86 +1,132 @@
+// DataBaseHandler.ts
+import { IDBConfig } from "@src/config";
 import mysql from "mysql2/promise";
 
 export class DatabaseHandler {
-	private dbPool: mysql.Pool;
-	private dbConfig: mysql.PoolOptions;
-	private keepAliveIntervalId?: NodeJS.Timeout; // インターバルIDを保存
+	private pool: mysql.Pool;
 
-	constructor(dbConfig: mysql.PoolOptions) {
-		this.dbConfig = dbConfig;
-		// mysql2/promiseが認識しないカスタムオプションを除外する場合があります
-		// 例: const { customOption, ...poolConfig } = dbConfig as any;
-		this.dbPool = mysql.createPool(dbConfig);
-		console.log("データベース接続プールが作成されました。");
-		this.setupKeepAlive(); // コンストラクタでキープアライブを開始
+	constructor(config: IDBConfig) {
+		this.pool = mysql.createPool({
+			connectionLimit: config.connectionLimit,
+			host: config.host,
+			user: config.user,
+			password: config.password,
+			database: config.database,
+			waitForConnections: config.waitForConnections,
+			queueLimit: config.queueLimit,
+			connectTimeout: config.connectTimeout,
+		});
 	}
 
-	// 初期接続テスト用のメソッド
 	public async connect(): Promise<void> {
-		let connection: mysql.PoolConnection | null = null;
 		try {
-			connection = await this.dbPool.getConnection();
-			await connection.ping(); // pingで軽量な接続確認
-			console.log("MySQLに接続し、正常に応答しました (初期接続確認)。");
+			// 接続テスト
+			const connection = await this.pool.getConnection();
+			console.log("MySQL データベースに接続しました。");
+			connection.release(); // すぐに解放
 		} catch (err) {
-			console.error("MySQLの初期接続またはPingに失敗しました:", err);
-			throw err; // サーバー起動処理でエラーを補足できるように再スロー
-		} finally {
-			if (connection) {
-				connection.release();
-			}
+			console.error("MySQL データベース接続エラー:", err);
+			throw err; // サーバーの起動を停止させるためにエラーをスロー
 		}
 	}
 
-	// プールから接続を取得 (プールが再接続を管理)
-	public async getConnection(): Promise<mysql.PoolConnection> {
-		try {
-			const connection = await this.dbPool.getConnection();
-			return connection;
-		} catch (error) {
-			console.error("プールからのMySQL接続の取得に失敗:", error);
-			throw error;
-		}
-	}
-
-	// ヘルスチェック実行メソッド
-	private async performHealthCheck(): Promise<void> {
-		let connection: mysql.PoolConnection | null = null;
-		try {
-			connection = await this.dbPool.getConnection();
-			await connection.ping();
-			// console.log('データベースヘルスチェック: Ping成功'); // 冗長な場合があるためコメントアウト
-		} catch (err) {
-			console.error('データベースヘルスチェック/Ping失敗:', err);
-			// mysql2/promiseプールは、後続のgetConnection呼び出しで接続の再確立を試みます。
-		} finally {
-			if (connection) {
-				connection.release();
-			}
-		}
-	}
-
-	// 定期的なヘルスチェックの設定
-	private setupKeepAlive(intervalMs: number = 300000): void { // デフォルト5分 (300,000 ms)
-		if (this.keepAliveIntervalId) {
-			clearInterval(this.keepAliveIntervalId);
-		}
-		this.keepAliveIntervalId = setInterval(() => {
-			this.performHealthCheck();
-		}, intervalMs);
-		console.log(`データベースの定期的なヘルスチェックが${intervalMs / 60000}分ごとに設定されました。`);
-	}
-
-	// プールを閉じ、キープアライブインターバルをクリア
 	public async close(): Promise<void> {
-		if (this.keepAliveIntervalId) {
-			clearInterval(this.keepAliveIntervalId);
-			this.keepAliveIntervalId = undefined;
-		}
 		try {
-			await this.dbPool.end();
-			console.log("MySQL接続プールが正常に閉じられました。");
+			await this.pool.end();
+			console.log("MySQL データベース接続が正常にクローズされました。");
 		} catch (err) {
-			console.error("MySQL接続プールのクローズ中にエラーが発生しました:", err);
+			console.error("MySQL 接続クローズエラー:", err);
+			throw err;
 		}
 	}
+
+	/**
+	 * student_log_view からすべての学生ログを取得します。
+	 */
+	public async fetchStudentLogs(): Promise<any[]> {
+		const sql = "SELECT * FROM student_log_view";
+		try {
+			const [rows] = await this.pool.query(sql);
+			return rows as any[];
+		} catch (err) {
+			console.error("SQL実行エラー (fetchStudentLogs):", err);
+			throw err; // エラーを呼び出し元に伝播させる
+		}
+	}
+
+	/**
+	 * 指定された student_ID のログを挿入または更新します。
+	 * (ストアドプロシージャ 'insert_or_update_log' を呼び出します)
+	 */
+	public async insertOrUpdateLog(studentID: string): Promise<void> {
+		const sql = "CALL insert_or_update_log(?)";
+		try {
+			await this.pool.query(sql, [studentID]);
+		} catch (err) {
+			console.error("SQL実行エラー (insertOrUpdateLog):", err);
+			throw err;
+		}
+	}
+
+	/**
+	 * 指定された student_ID の学生名を更新します。
+	 * (ストアドプロシージャ 'update_student_name' を呼び出します)
+	 */
+	public async updateStudentName(
+		studentID: string,
+		studentName: string
+	): Promise<void> {
+		const sql = "CALL update_student_name(?, ?)";
+		try {
+			await this.pool.query(sql, [studentID, studentName]);
+		} catch (err) {
+			console.error("SQL実行エラー (updateStudentName):", err);
+			throw err;
+		}
+	}
+
+	/**
+	 * 指定された student_ID の学生トークンを取得します。
+	 * (ストアドプロシージャ 'get_student_token' を呼び出します)
+	 */
+	public async getStudentToken(studentID: string): Promise<string | null> {
+		const sql = "CALL get_student_token(?)";
+		try {
+			// ストアドプロシージャの呼び出し結果は複雑なネスト構造になる
+			const [rows] = (await this.pool.query(sql, [studentID])) as any[];
+			// rows[0] が SELECT の結果セット
+			if (rows[0] && rows[0].length > 0) {
+				return rows[0][0].student_token;
+			}
+			return null;
+		} catch (err) {
+			console.error("SQL実行エラー (getStudentToken):", err);
+			throw err;
+		}
+	}
+
+	// 変更: ここから追加
+	/**
+	 * 在室中のすべてのユーザーを「不在」状態に更新します。
+	 * (日次リセット用)
+	 * @returns 更新された行数
+	 */
+	public async setAllUsersOutOfRoom(): Promise<number> {
+		// isInRoom = TRUE のレコードのみを FALSE に更新
+		const sql = "UPDATE logs SET isInRoom = FALSE WHERE isInRoom = TRUE";
+		try {
+			const [results] = (await this.pool.query(sql)) as [
+				mysql.ResultSetHeader,
+				any
+			];
+			console.log(
+				`Daily reset: ${results.affectedRows} users set to 'out of room'.`
+			);
+			return results.affectedRows; // 影響を受けた行数を返す
+		} catch (err) {
+			console.error("SQL実行エラー (setAllUsersOutOfRoom):", err);
+			throw err; // エラーを呼び出し元に伝播させる
+		}
+	}
+	// 変更: ここまで追加
 }

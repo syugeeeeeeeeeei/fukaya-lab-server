@@ -16,7 +16,7 @@ interface IServerConfig{
 	host :string;
 }
 
-interface IDBConfig extends mysql.PoolOptions {
+export interface IDBConfig extends mysql.PoolOptions {
 	host:string;
 	user:string;
 	password:string;
