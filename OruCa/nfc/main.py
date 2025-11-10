@@ -8,9 +8,7 @@ from nfc.tag.tt3 import BlockCode, ServiceCode
 from typing import cast
 import time
 import json
-# 修正: create_connection は websocket モジュールから直接インポートするのではなく、
-# モジュール全体をインポートしてから `websocket.create_connection` として呼び出します。
-import websocket # 同期WebSocketクライアントライブラリ
+from websocket import create_connection # 同期WebSocketクライアントライブラリ
 
 class NFCReaderPublisher:
     # ----------------------------------------------------------------------
@@ -18,7 +16,7 @@ class NFCReaderPublisher:
     # ----------------------------------------------------------------------
     SYSTEM_CODE = 0xFE00 # FeliCaのシステムコード
     # APIサーバーが立てるWebSocketサーバーのURL
-    WS_SERVER_URL = "ws://api:3000/log/write" # APIサーバーのWebSocketエンドポイント
+    WS_SERVER_URL = "ws://oruca-api:3000/log/write" # APIサーバーのWebSocketエンドポイント
 
     def __init__(self):
         # カードが接続されたときにIDを一時的に保持するためのインスタンス変数
@@ -37,7 +35,7 @@ class NFCReaderPublisher:
         """
         sc = ServiceCode(106, 0b001011) 
         bc = BlockCode(0)
-        
+
         # 暗号化なしでデータを読み取る
         student_id_bytearray = cast(bytearray, tag.read_without_encryption([sc], [bc]))
         
@@ -78,7 +76,7 @@ class NFCReaderPublisher:
         try:
             # 修正: websocket.create_connection を使って接続を確立
             print(f"接続試行中... API WSサーバー: {self.WS_SERVER_URL}")
-            ws = websocket.create_connection(self.WS_SERVER_URL, timeout=5)
+            ws = create_connection(self.WS_SERVER_URL, timeout=5)
             ws.send(message)
             print(f"🟢 ID:{student_ID} をAPIサーバーに正常に発行しました。")
             ws.close()
@@ -95,24 +93,34 @@ class NFCReaderPublisher:
         IDを読み取り、Pubせずに一時保存します。（多重送信防止のため）
         """
         print("✨ カードが接続されました。データを読み取ります...")
-        
+    
         # 接続されたタグがFeliCa Standardタイプか、かつ設定されたシステムコードをサポートしているかを確認
         if isinstance(tag, nfc.tag.tt3_sony.FelicaStandard) and self.SYSTEM_CODE in tag.request_system_code():
+        
+            # --- 💡 修正箇所: ここで polling を実行 ---
+            # 読み書き処理の前に、指定したシステムコードでポーリングを行う必要がある
+            try:
+                tag.idm, tag.pmm, *_ = tag.polling(self.SYSTEM_CODE)
+            except Exception as e:
+                print(f"🔴 ポーリング失敗: {e}")
+                return True # ポーリング失敗時は処理を中断
+            # ------------------------------------
+
             try:
                 # 1. カードから学生IDを抽出（静的メソッドとして呼び出し）
                 student_ID = self.get_student_ID(tag)
-                
+
                 # 2. PubせずにIDをインスタンス変数に保存
                 self._card_id_to_publish = student_ID
                 print(f"IDを抽出・保存しました: {student_ID}。カードが離れるのを待って発行します。")
-                
             except Exception as e:
+               # 💡 エラー発生時に試行したサービスコード/ブロックコードの値がログに出力されます
                 print(f"🔴 カード処理中のエラー: {e}")
+                print("--- FeliCa Read Failed: 試行したサービスコードとブロックコードを確認してください ---")
                 self._card_id_to_publish = None # エラー時はクリア
-                
         # 処理が完了したら接続セッションを終了し、次のポーリングに移る
-        return True 
-
+        return True
+    
     # ----------------------------------------------------------------------
     # カード解放時コールバックメソッド (IDをPub)
     # ----------------------------------------------------------------------
