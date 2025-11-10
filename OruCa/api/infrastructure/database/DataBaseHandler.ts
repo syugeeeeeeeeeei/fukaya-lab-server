@@ -15,7 +15,7 @@ export class DatabaseHandler {
 			waitForConnections: config.waitForConnections,
 			queueLimit: config.queueLimit,
 			connectTimeout: config.connectTimeout,
-			timezone: "+09:00",
+			timezone: "+09:00", // タイムゾーン設定 (前回適用済み)
 		});
 	}
 
@@ -87,19 +87,6 @@ export class DatabaseHandler {
 	}
 
 	/**
-	 * 指定された student_ID の学生を削除します。
-	 */
-	public async deleteStudent(student_ID: string): Promise<void> {
-		const sql = `DELETE FROM users WHERE student_ID = ?;`;
-		try {
-			await this.pool.query(sql, [student_ID]);
-		} catch (err) {
-			console.error("SQL実行エラー (updateStudentName):", err);
-			throw err;
-		}
-	}
-
-	/**
 	 * 指定された student_ID の学生トークンを取得します。
 	 * (ストアドプロシージャ 'get_student_token' を呼び出します)
 	 */
@@ -119,7 +106,37 @@ export class DatabaseHandler {
 		}
 	}
 
-	// 変更: ここから追加
+	// 変更: ここから追加 (Slack通知のため)
+	/**
+	 * 現在在室している人数を取得します。
+	 */
+	public async getInRoomCount(): Promise<number> {
+		const sql = "SELECT COUNT(*) AS inRoomCount FROM logs WHERE isInRoom = TRUE";
+		try {
+			const [rows] = (await this.pool.query(sql)) as any[];
+			if (rows && rows.length > 0) {
+				return rows[0].inRoomCount;
+			}
+			return 0;
+		} catch (err) {
+			console.error("SQL実行エラー (getInRoomCount):", err);
+			throw err;
+		}
+	}
+	/**
+	 * 指定された student_ID のユーザーを削除します。
+	 * (logs テーブルも CASCADE により削除されます)
+	 */
+	public async deleteStudent(studentID: string): Promise<void> {
+		const sql = "DELETE FROM users WHERE student_ID = ?";
+		try {
+			await this.pool.query(sql, [studentID]);
+		} catch (err) {
+			console.error("SQL実行エラー (deleteStudent):", err);
+			throw err;
+		}
+	}
+
 	/**
 	 * 在室中のすべてのユーザーを「不在」状態に更新します。
 	 * (日次リセット用)
@@ -142,5 +159,4 @@ export class DatabaseHandler {
 			throw err; // エラーを呼び出し元に伝播させる
 		}
 	}
-	// 変更: ここまで追加
 }

@@ -9,11 +9,10 @@ import * as WebSocket from "ws";
 
 export class WebSocketHandler {
 	private wss: WebSocket.WebSocketServer;
-	// private connectionPool: mysql.PoolConnection; // 削除
 	private dbHandler: DatabaseHandler; // 追加
 	private messageHandler: MessageHandler;
 
-	constructor(httpServer: http.Server, dbHandler: DatabaseHandler) { // 引数を DatabaseHandler に変更
+	constructor(httpServer: http.Server, dbHandler: DatabaseHandler) {
 		this.wss = new WebSocket.WebSocketServer({ server: httpServer });
 		this.dbHandler = dbHandler; // DatabaseHandler を保持
 
