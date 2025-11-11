@@ -53,7 +53,6 @@ _run task services:
 
 [doc("全サービス (または指定したサービス) を並列で起動します。")]
 up *services:
-  @just _setup-network
   @echo "==> 🚀 Pods/コンテナの起動を開始します..."
   @just _run 'up' "{{services}}"
   @echo "==> ✅ 'up' タスクがターゲットに対して完了しました。"
@@ -72,7 +71,6 @@ down-v *services:
 
 [doc("全サービス (または指定したサービス) を並列でビルドします。")]
 build *services:
-  @just _setup-network
   @echo "==> 🏗️ サービスのビルドを開始します..."
   @just _run 'build' "{{services}}"
   @echo "==> ✅ 'build' タスクがターゲットに対して完了しました。"
@@ -82,7 +80,7 @@ build *services:
 # -----------------------------------------------------------------
 [private]
 _setup-network:
-  @docker network inspect {{NETWORK}} >/dev/null 2>&1 && (echo "==> ℹ️ Dockerネットワーク '{{NETWORK}}' は既に存在します。") || (echo "==> 🌐 Dockerネットワーク '{{NETWORK}}' を作成します..." && docker network create --subnet 172.20.0.0/16 --gateway 172.20.0.1 {{NETWORK}})
+  @docker network inspect {{NETWORK}} >/dev/null 2>&1 && (echo "==> ℹ️ Dockerネットワーク '{{NETWORK}}' は既に存在します。") || (echo "==> 🌐 Dockerネットワーク '{{NETWORK}}' を作成します..." && docker network create --driver=bridge --subnet=172.20.0.0/24 {{NETWORK}})
 
 [doc("Docker ネットワーク ({{NETWORK}}) を削除します。")]
 delete-network:
