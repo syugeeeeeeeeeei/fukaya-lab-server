@@ -1,9 +1,9 @@
 # /OruCa/justfile
 
 _default:
-  @just --list
+  @just --list -u
 
-# [実行例] just OruCa::build
+[doc("OruCa サービスに必要な Podman イメージをビルドします。")]
 build:
     @echo "==> 🔨 Building OruCa images..."
     @podman build -t oruca-vite:latest ./vite
@@ -13,20 +13,17 @@ build:
     @podman build -t oruca-nfc:latest ./nfc
     @echo "==> ✅ OruCa images built."
 
-# [実行例] just OruCa::up
-# 'build' タスクに依存させる場合は、以下の行のコメントを解除します
-# up: build
-up:
+[doc("OruCa の Pod (pod.yml) を起動します。")]
+up: build
     @echo "--> 🚀 Starting OruCa"
     @podman kube play ./pod.yml
 
-# [実行例] just OruCa::down
+[doc("OruCa の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping OruCa"
     @podman kube down ./pod.yml
 
-# [実行例] just OruCa::backup
-# OruCaのDBバックアップを保存します
+[doc("OruCa の MySQL データベースのバックアップを作成します。")]
 backup:
     @echo "💾 Saving OruCa MySQL backup..."
     @# podman exec を使用し、コンテナ内の環境変数 ($$MYSQL_USER など) を参照します
@@ -35,8 +32,7 @@ backup:
     @podman exec oruca-mysql sh -c "mkdir -p /backups/$$(date +%Y%m%d-%H%M%S) && mysqldump -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
     @echo "✅ Backup created in OruCa mysql volume's /backups directory."
 
-# [実行例] just OruCa::restore YYYYMMDD-HHMMSS
-# OruCaのDBバックアップをリストアします
+[doc("指定した日時のバックアップから MySQL データベースをリストアします。")]
 restore BACKUP_DATE:
     @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_DATE}}..."
     @# podman exec -i (interactive) を使用して標準入力をコンテナの sh に渡し、mysql に流し込みます

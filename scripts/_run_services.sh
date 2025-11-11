@@ -1,0 +1,62 @@
+#!/bin/sh
+# _run_services.sh
+
+# エラーが発生したらスクリプトを停止
+set -e
+
+# --- 引数の解析 ---
+TASK="$1"           # 'up', 'down', 'build', 'ls'
+DEFAULT_SERVICES="$2" # "Entry OruCa homepage ..."
+TARGET_SERVICES="$3"  # "OruCa homepage" (引数で指定された場合) または "" (空文字列)
+
+# --- 実行対象サービスの決定 ---
+SERVICES_TO_RUN=""
+if [ "$TASK" = "ls" ]; then
+  # 'ls' は常に全サービスを対象とする
+  SERVICES_TO_RUN="$DEFAULT_SERVICES"
+elif [ -n "$TARGET_SERVICES" ]; then
+  # 引数で指定されたサービスを使用
+  SERVICES_TO_RUN="$TARGET_SERVICES"
+else
+  # 引数がなければ、デフォルトの全サービスを使用
+  SERVICES_TO_RUN="$DEFAULT_SERVICES"
+fi
+
+# --- 'ls' タスクの処理 ---
+if [ "$TASK" = "ls" ]; then
+  # 'ls' はリスト表示するだけ
+  for service in $SERVICES_TO_RUN; do
+    echo " - $service"
+  done
+  exit 0 # 処理終了
+fi
+
+# --- 'up', 'down', 'build' タスクの処理 ---
+echo "--> (Target services: $SERVICES_TO_RUN)"
+
+# --- 各サービスに対するタスクを並列実行 ---
+PID_LIST=""
+for service in $SERVICES_TO_RUN; do
+  echo "--- Running '$TASK' for $service ---"
+  
+  # justコマンドをバックグラウンド(&)で実行
+  just "$service::$TASK" &
+  
+  # 実行したプロセスのID(PID)を記録
+  PID_LIST="$PID_LIST $!"
+done
+
+# --- 全てのバックグラウンド処理の終了を待つ ---
+echo "--> Waiting for all tasks to complete..."
+EXIT_CODE=0
+for pid in $PID_LIST; do
+  # waitコマンドでジョブの終了を待つ
+  # 失敗したジョブがあれば、EXIT_CODEを1に設定
+  if ! wait "$pid"; then
+    EXIT_CODE=1
+  fi
+done
+
+echo "--> All tasks completed."
+# 失敗したジョブが1つでもあれば、スクリプト全体をエラー終了させる
+exit $EXIT_CODE

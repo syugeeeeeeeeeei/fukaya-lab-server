@@ -1,74 +1,52 @@
 # /justfile (ルート)
 
+_default:
+  @just --list -us
+
 # -----------------------------------------------------------------
 #  設定: プロジェクト・オーケストレーション
 # -----------------------------------------------------------------
 
-# [!] 起動可能なサービス（モジュール）のリストを定義
-# サービスを追加/削除する際は、ここと下の 'mod' の両方を編集する
-SERVICES := "Entry" \
-            "OruCa" \
-            "homepage" \
-            "portainer" \
-            "ProjectBotany"
-            # "gitlab"
+SERVICES := "Entry OruCa homepage portainer ProjectBotany gitlab"
 
-# 各サービス・モジュールを読み込む
 mod Entry
 mod OruCa
 mod homepage
-mod portainer
-mod ProjectBotany
+# mod portainer
+# mod ProjectBotany
 # mod gitlab
 
-# Podman が使用する共通ネットワーク
 NETWORK := "fukaya-lab-network"
 
 # -----------------------------------------------------------------
 #  📦 全体 サービス管理 (Global Tasks)
 # -----------------------------------------------------------------
 
-# [実行例]
-#   just up               # SERVICES リストの全サービスを並列起動
-#   just up OruCa         # OruCa のみ起動
-#   just up OruCa homepage  # OruCa と homepage を並列起動
-[parallel]
-up +services:
+# [private] 共通の実行スクリプトを呼び出すヘルパー
+# $1: タスク (up, down, build, ls)
+# $2: 引数で渡されたサービスリスト (services変数)
+[private]
+_run task services:
+    @./_run_services.sh {{task}} "{{SERVICES}}" "{{services}}"
+
+[doc("全サービス (または指定したサービス) を並列で起動します。")]
+up *services:
     @just _setup-network
     @echo "==> 🚀 Starting Pods..."
-    @services_to_run := if argc() > 0 { services } else { SERVICES }
-    @echo "--> (Target services: {{services_to_run}})"
-    @for service in services_to_run {
-        # 'just {{service}}::up' を実行する
-        @just {{service}}::up
-    }
+    @just _run 'up' "{{services}}"
     @echo "==> ✅ 'up' task finished for targets."
 
-# [実行例]
-#   just down             # SERVICES リストの全サービスを並列停止
-#   just down OruCa       # OruCa のみ停止
-[parallel]
-down +services:
+[doc("全サービス (または指定したサービス) を並列で停止します。")]
+down *services:
     @echo "==> 🛑 Stopping Pods..."
-    @services_to_run := if argc() > 0 { services } else { SERVICES }
-    @echo "--> (Target services: {{services_to_run}})"
-    @for service in services_to_run {
-        @just {{service}}::down
-    }
+    @just _run 'down' "{{services}}"
     @echo "==> ✅ 'down' task finished for targets."
 
-# [実行例]
-#   just build            # SERVICES リストの全サービスを並列ビルド
-#   just build OruCa      # OruCa のみビルド
-[parallel]
-build +services:
+[doc("全サービス (または指定したサービス) を並列でビルドします。")]
+build *services:
     @just _setup-network
     @echo "==> 🏗️ Building services..."
-    @services_to_run := if argc() > 0 { services } else { SERVICES }
-    @echo "--> (Target services: {{services_to_run}})"
-    @for service in services_to_run {
-        @just {{service}}::build
-    }
+    @just _run 'build' "{{services}}"
     @echo "==> ✅ 'build' task finished for targets."
 
 # -----------------------------------------------------------------
@@ -82,31 +60,20 @@ _setup-network:
 #  🩺 モニタリング
 # -----------------------------------------------------------------
 
-# [実行例] just ls (SERVICES リストを表示)
+[doc("利用可能な全サービス (SERVICES 変数) の一覧を表示します。")]
 ls:
     @echo "==> 📋 Available Services (in SERVICES list)"
-    @for service in SERVICES {
-        echo " - {{service}}"
-    }
+    @just _run 'ls' ""
 
-# [実行例] just ps
+[doc("実行中の Pod (podman pod ls) を表示します。")]
 ps:
     @echo "==> 🏃 Running Pods (podman pod ls)"
     @podman pod ls
 
-# # -----------------------------------------------------------------
-# #  🛠️ サービス固有コマンド (エイリアス)
-# # -----------------------------------------------------------------
-
-# # [実行例] just backup-oruca (just OruCa::backup のエイリアス)
-# alias backup-oruca := OruCa::backup
-
-# # [実行例] just restore-oruca (just OruCa::restore のエイリアス)
-# alias restore-oruca := OruCa::restore
-
 # -----------------------------------------------------------------
 #  🖥️ Pod化対象外 (AppFlowy)
 # -----------------------------------------------------------------
+[doc("AppFlowy (Pod化対象外) を起動します。")]
 appflowy-up:
     @echo "==> 🚀 Starting AppFlowy (non-Pod)..."
     @podman run -d --rm --name appflowy \
@@ -116,10 +83,11 @@ appflowy-up:
         -v $HOME/.Xauthority:/root/.Xauthority:rw \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
         -v /dev/dri:/dev/dri \
-        -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
+        -v /var/run/dbus/system_socket:/var/run/dbus/system_socket \
         --device /dev/dri \
         appflowy/appflowy:latest
 
+[doc("AppFlowy (Pod化対象外) を停止します。")]
 appflowy-down:
     @echo "==> 🛑 Stopping AppFlowy..."
     @podman stop appflowy
