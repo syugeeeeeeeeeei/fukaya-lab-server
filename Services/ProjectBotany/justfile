@@ -8,20 +8,20 @@ _default:
 [doc("ProjectBotany サービスに必要な Podman イメージをビルドします。")]
 build:
     @echo "🔨 [{{SERVICE_NAME}}] Building images"
-    @podman-compose --env-file ../../.env build
+    @docker compose --env-file ../../.env build
     @echo "✅ [{{SERVICE_NAME}}] images built"
 
 [doc("ProjectBotany の Pod を起動します。")]
 up: build
     @echo "🚀 [{{SERVICE_NAME}}] Starting"
-    @podman-compose --env-file ../../.env up -d
+    @docker compose --env-file ../../.env up -d
 
 [doc("ProjectBotany の Pod を停止します。")]
 down:
     @echo "🛑 [{{SERVICE_NAME}}] Stopping"
-    @podman-compose --env-file ../../.env down
+    @docker compose --env-file ../../.env down
 
 [doc("ProjectBotany の PodとVolume を停止します。")]
 down-v:
     @echo "🗑️ [{{SERVICE_NAME}}] Stopping pod and deleting volumes..."
-    @podman-compose down --volumes
+    @docker compose down --volumes

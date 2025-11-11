@@ -1,56 +1,26 @@
+# ProjectBotany/docker-compose.yml
 name: projectbotany
-# ProjectBotany/docker-compose.yml (修正不要)
 services:
   # -----------------------------------------------------------
-  #  🌿 ProjectBotany (本番環境: prod)
-  #  (docker-compose --profile prod up -d で起動)
+  #  🌿 ProjectBotany
   # -----------------------------------------------------------
   projectbotany-vite:
     build:
       context: ./vite
       dockerfile: Dockerfile
-      target: prod # 👈 [変更] prod ステージをビルド対象にする
-    container_name: projectbotany-vite # 👈 [追加] コンテナ名を指定
+    container_name: projectbotany-vite
     volumes:
       - ./vite:/app:delegated
       - /app/node_modules
     networks:
-      - fukaya-lab-network # 👈 [変更] 共通ネットワークに変更
+      - fukaya-lab-network
     restart: unless-stopped
     command: ["yarn", "dev"]
     labels:
-      # 👈 [追加] Caddy の設定
       caddy: http://projectbotany.app.fukaya-sus.lab # ドメイン名
-      caddy.reverse_proxy: "{{upstreams 5173}}" # package.json の "start" ポート
-      # caddy.tls: "internal"
-    profiles: ["prod"] # 👈 [追加] prod プロファイルでのみ起動
-
-  # -----------------------------------------------------------
-  #  🛠️ ProjectBotany (開発環境: dev)
-  #  (docker-compose --profile dev up -d で起動)
-  # -----------------------------------------------------------
-  projectbotany-vite-dev:
-    build:
-      context: ./vite
-      dockerfile: Dockerfile
-      target: dev # 👈 [追加] dev ステージをビルド対象にする
-    container_name: projectbotany-vite-dev # 👈 [追加] 開発用コンテナ名
-    volumes:
-      - ./vite:/app:delegated
-      - /app/node_modules
-    networks:
-      - fukaya-lab-network # 👈 [追加] 共通ネットワークに参加
-    restart: unless-stopped
-    command: ["yarn", "dev"] # 👈 [追加] 開発サーバーを起動
-    labels:
-      # 👈 [追加] Caddy の設定 (開発用)
-      caddy: projectbotany.app.fukaya-sus.lab # 開発用ドメイン
-      caddy.reverse_proxy: "{{upstreams 5173}}" # Vite 開発サーバーのデフォルトポート
-      # caddy.tls: "internal"
-    profiles: ["dev"] # 👈 [追加] dev プロファイルでのみ起動
+      caddy.reverse_proxy: "{{upstreams 5173}}"
 
 networks:
-  # 👈 [変更] 共通の外部ネットワークを使用するように変更
   fukaya-lab-network:
     external: true
     name: fukaya-lab-network

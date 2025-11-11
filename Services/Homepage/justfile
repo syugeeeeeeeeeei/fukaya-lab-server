@@ -6,22 +6,22 @@ _default:
 [doc("homepage サービスに必要な Podman イメージをビルドします。")]
 build:
     @echo "==> 🔨 Building homepage images..."
-    # [変更] podman-compose でビルド
-    @podman-compose --env-file ../../.env build
+    # [変更] docker compose でビルド
+    @docker compose --env-file ../../.env build
     @echo "==> ✅ homepage images built."
 
 [doc("homepage の Pod (pod.yml) を起動します。")]
 up: build
     @echo "--> 🚀 Starting homepage"
-    # [変更] podman-compose で起動
-    @podman-compose --env-file ../../.env up -d
+    # [変更] docker compose で起動
+    @docker compose --env-file ../../.env up -d
 
 [doc("homepage の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping homepage"
-    # [変更] podman-compose で停止
-    @podman-compose --env-file ../../.env 
+    # [変更] docker compose で停止
+    @docker compose --env-file ../../.env 
     
 down-v:
     @echo "==> 🗑️ Stopping pod and deleting volumes..."
-    @podman-compose down --volumes
+    @docker compose down --volumes
