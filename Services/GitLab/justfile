@@ -20,4 +20,4 @@ down:
 
 down-v:
     @echo "==> 🗑️ Stopping pod and deleting volumes..."
-    @docker compose down --volumes
+    @docker compose --env-file ../../.env down --volumes

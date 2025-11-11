@@ -31,7 +31,7 @@ if [ "$TASK" = "ls" ]; then
   exit 0 # 処理終了
 fi
 
-# --- [ここから追加] サービスの存在チェック (ls 以外) ---
+# --- サービスの存在チェック (ls 以外) ---
 # TARGET_SERVICES が指定された (空でない) 場合のみ、検証を行う。
 if [ -n "$TARGET_SERVICES" ]; then
   INVALID_SERVICES=""
@@ -64,35 +64,31 @@ if [ -n "$TARGET_SERVICES" ]; then
     exit 1 # エラーでスクリプト終了
   fi
 fi
-# --- [ここまで追加] ---
-
 
 # --- 'up', 'down', 'build' タスクの処理 ---
 echo "--> (Target services: $SERVICES_TO_RUN)"
 
-# --- 各サービスに対するタスクを並列実行 ---
-PID_LIST=""
+# --- 各サービスに対するタスクを逐次実行 ---
+# 実行結果を累積するための変数を初期化
+AGGREGATE_EXIT_CODE=0
+
 for service in $SERVICES_TO_RUN; do
   echo "--- Running '$TASK' for $service ---"
   
-  # justコマンドをバックグラウンド(&)で実行
-  just "$service::$TASK" &
+  # justコマンドをフォアグラウンドで実行し、終了コードをキャプチャ
+  # エラーが発生しても set -e で即座に終了させず、次のサービスに移るために `|| true` を付加
+  just "$service::$TASK"
+  CURRENT_EXIT_CODE=$?
   
-  # 実行したプロセスのID(PID)を記録
-  PID_LIST="$PID_LIST $!"
-done
-
-# --- 全てのバックグラウンド処理の終了を待つ ---
-echo "--> Waiting for all tasks to complete..."
-EXIT_CODE=0
-for pid in $PID_LIST; do
-  # waitコマンドでジョブの終了を待つ
-  # 失敗したジョブがあれば、EXIT_CODEを1に設定
-  if ! wait "$pid"; then
-    EXIT_CODE=1
+  if [ "$CURRENT_EXIT_CODE" -ne 0 ]; then
+    echo "--- ⚠️ ERROR: '$service' の '$TASK' が終了コード $CURRENT_EXIT_CODE で失敗しました。 ---" >&2
+    # 総合的な終了コードを失敗に設定
+    AGGREGATE_EXIT_CODE=1
+  else
+    echo "--- ✅ '$service' の '$TASK' が正常に完了しました。 ---"
   fi
 done
 
 echo "--> All tasks completed."
-# 失敗したジョブが1つでもあれば、スクリプト全体をエラー終了させる
-exit $EXIT_CODE
+# 総合的な終了コードを返してスクリプト終了
+exit $AGGREGATE_EXIT_CODE

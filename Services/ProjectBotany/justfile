@@ -24,4 +24,4 @@ down:
 [doc("ProjectBotany の PodとVolume を停止します。")]
 down-v:
     @echo "🗑️ [{{SERVICE_NAME}}] Stopping pod and deleting volumes..."
-    @docker compose down --volumes
+    @docker compose --env-file ../../.env down --volumes

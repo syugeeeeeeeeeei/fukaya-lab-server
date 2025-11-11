@@ -1,4 +1,4 @@
-name: "entry"
+name: "Entry"
 services:
   # 🔄 Caddy - Reverse Proxy
   caddy:
