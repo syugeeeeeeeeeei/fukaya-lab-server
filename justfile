@@ -7,19 +7,19 @@ _default:
 #  設定: プロジェクト・オーケストレーション
 # -----------------------------------------------------------------
 
-SERVICES := "Entry OruCa homepage portainer ProjectBotany gitlab"
+SERVICES := shell("ls Services")
 
-[group("サブモジュール")]
+[group("Services")]
 mod Entry "./Services/Entry"
-[group("サブモジュール")]
+[group("Services")]
 mod OruCa "./Services/OruCa"
-[group("サブモジュール")]
+[group("Services")]
 mod homepage "./Services/homepage"
-[group("サブモジュール")]
+[group("Services")]
 mod portainer "./Services/portainer"
-[group("サブモジュール")]
+[group("Services")]
 mod ProjectBotany "./Services/ProjectBotany"
-[group("サブモジュール")]
+[group("Services")]
 mod gitlab "./Services/gitlab"
 
 NETWORK := "fukaya-lab-network"
@@ -33,7 +33,7 @@ NETWORK := "fukaya-lab-network"
 # $2: 引数で渡されたサービスリスト (services変数)
 [private]
 _run task services:
-    @./_run_services.sh {{task}} "{{SERVICES}}" "{{services}}"
+    @./scripts/_run_services.sh {{task}} "{{SERVICES}}" "{{services}}"
 
 [doc("全サービス (または指定したサービス) を並列で起動します。")]
 up *services:

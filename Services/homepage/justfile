@@ -1,0 +1,20 @@
+# /Services/homepage/justfile
+
+_default:
+  @just --list -u
+
+[doc("homepage サービスに必要な Podman イメージをビルドします。")]
+build:
+    @echo "==> 🔨 Building homepage images..."
+    @podman build -t homepage-vite:latest ./vite_homepage
+    @echo "==> ✅ homepage images built."
+
+[doc("homepage の Pod (pod.yml) を起動します。")]
+up: build
+    @echo "--> 🚀 Starting homepage"
+    @podman kube play ./pod.yml
+
+[doc("homepage の Pod (pod.yml) を停止します。")]
+down:
+    @echo "--> 🛑 Stopping homepage"
+    @podman kube down ./pod.yml

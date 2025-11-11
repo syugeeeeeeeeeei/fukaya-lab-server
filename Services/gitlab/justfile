@@ -1,0 +1,18 @@
+# /Services/gitlab/justfile
+
+_default:
+  @just --list -u
+
+[doc("gitlab サービスはビルド不要です（既存イメージ利用）。")]
+build:
+    @echo "==> ℹ️ gitlab has no images to build. (Uses pre-built images)"
+
+[doc("gitlab の Pod (pod.yml) を起動します。")]
+up:
+    @echo "--> 🚀 Starting gitlab"
+    @podman kube play ./pod.yml
+
+[doc("gitlab の Pod (pod.yml) を停止します。")]
+down:
+    @echo "--> 🛑 Stopping gitlab"
+    @podman kube down ./pod.yml

@@ -31,6 +31,42 @@ if [ "$TASK" = "ls" ]; then
   exit 0 # 処理終了
 fi
 
+# --- [ここから追加] サービスの存在チェック (ls 以外) ---
+# TARGET_SERVICES が指定された (空でない) 場合のみ、検証を行う。
+if [ -n "$TARGET_SERVICES" ]; then
+  INVALID_SERVICES=""
+  
+  # SERVICES_TO_RUN (TARGET_SERVICES と同じ) をループ
+  for service in $SERVICES_TO_RUN; do
+    found=0
+    # DEFAULT_SERVICES (定義済みリスト) をループして一致を探す
+    for default_service in $DEFAULT_SERVICES; do
+      if [ "$service" = "$default_service" ]; then
+        found=1
+        break
+      fi
+    done
+    
+    # DEFAULT_SERVICES に存在しなかった場合
+    if [ $found -eq 0 ]; then
+      # 見つからなかったサービス名を記録 (先頭にスペースが入る)
+      INVALID_SERVICES="$INVALID_SERVICES $service"
+    fi
+  done
+  
+  # 見つからないサービスが1つでもあった場合
+  if [ -n "$INVALID_SERVICES" ]; then
+    echo "" # エラーを見やすくするため改行
+    echo "🚨 エラー: 以下のサービスは定義されていません。" >&2
+    echo "           (ルート justfile の 'SERVICES' 変数を確認してください)" >&2
+    echo "  -> $INVALID_SERVICES" >&2
+    echo "" # 改行
+    exit 1 # エラーでスクリプト終了
+  fi
+fi
+# --- [ここまで追加] ---
+
+
 # --- 'up', 'down', 'build' タスクの処理 ---
 echo "--> (Target services: $SERVICES_TO_RUN)"
 
