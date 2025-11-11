@@ -1,5 +1,5 @@
 # Node公式イメージ
-FROM node:20-alpine
+FROM docker.io/library/node:20-alpine
 
 # 作業ディレクトリの指定
 WORKDIR /app

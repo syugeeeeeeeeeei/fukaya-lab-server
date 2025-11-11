@@ -1,5 +1,5 @@
 # ベースイメージとしてNode.jsを使用
-FROM node:20-alpine
+FROM docker.io/library/node:20-alpine
 
 # gitをインストール
 RUN apk update && apk add --no-cache git curl

@@ -1,4 +1,4 @@
-FROM python:3.13-alpine
+FROM docker.io/library/python:3.13-alpine
 
 # 必要なライブラリ（libusb）をインストール
 

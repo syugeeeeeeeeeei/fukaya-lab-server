@@ -1,0 +1,21 @@
+name: "homepage"
+services:
+  homepage:
+    build:
+      context: ./vite_homepage
+      dockerfile: Dockerfile
+    container_name: homepage
+    restart: unless-stopped
+    volumes:
+      - ./vite_homepage:/app:rw
+      # - ./vite_homepage/node_modules:/app/node_modules
+    expose:
+      - "4000"
+    networks:
+      - fukaya-lab-network
+    command: ["yarn","dev"]
+    labels:
+      caddy: http://fukaya-sus.lab
+      caddy.reverse_proxy: "{{upstreams 4000}}"
+    tty: true
+    stdin_open: true

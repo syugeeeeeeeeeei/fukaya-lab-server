@@ -1,5 +1,5 @@
 # /fukaya-lab-server/OruCa/mysql/Dockerfile (修正版)
-FROM mysql:8.0.42-debian
+FROM docker.io/library/mysql:8.0.42-debian
 
 ARG MYSQL_DATABASE
 ARG MYSQL_USER
