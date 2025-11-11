@@ -1,7 +1,7 @@
 # /justfile (ルート)
 
 _default:
-  @just --list -us
+  @just --list -u
 
 # -----------------------------------------------------------------
 #  設定: プロジェクト・オーケストレーション
@@ -9,12 +9,18 @@ _default:
 
 SERVICES := "Entry OruCa homepage portainer ProjectBotany gitlab"
 
-mod Entry
-mod OruCa
-mod homepage
-# mod portainer
-# mod ProjectBotany
-# mod gitlab
+[group("サブモジュール")]
+mod Entry "./Services/Entry"
+[group("サブモジュール")]
+mod OruCa "./Services/OruCa"
+[group("サブモジュール")]
+mod homepage "./Services/homepage"
+[group("サブモジュール")]
+mod portainer "./Services/portainer"
+[group("サブモジュール")]
+mod ProjectBotany "./Services/ProjectBotany"
+[group("サブモジュール")]
+mod gitlab "./Services/gitlab"
 
 NETWORK := "fukaya-lab-network"
 
