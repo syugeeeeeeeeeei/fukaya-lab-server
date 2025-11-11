@@ -1,35 +1,44 @@
-# /fukaya-lab-server/OruCa/justfile (新規作成)
+# /OruCa/justfile
 
-# --- 🛠️ OruCa ビルドタスク ---
-# ルートの 'build' メタタスクから 'OruCa::build' として呼び出されます。
+_default:
+  @just --list
+
+# [実行例] just OruCa::build
 build:
-    @echo "🛠️ Building OruCa frontend application..."
-    @docker compose -f ../docker-compose.yml \
-        --profile dev run --rm oruca-vite yarn build
-    @echo "✅ OruCa Frontend built to ./vite/dist/"
+    @echo "==> 🔨 Building OruCa images..."
+    @podman build -t oruca-vite:latest ./vite
+    @podman build -t oruca-web:latest ./web
+    @podman build -t oruca-api:latest ./api
+    @podman build -t oruca-mysql:latest ./mysql
+    @podman build -t oruca-nfc:latest ./nfc
+    @echo "==> ✅ OruCa images built."
 
+# [実行例] just OruCa::up
+# 'build' タスクに依存させる場合は、以下の行のコメントを解除します
+# up: build
+up:
+    @echo "--> 🚀 Starting OruCa"
+    @podman kube play ./pod.yml
 
-# --- 📦 OruCa 固有タスク ---
-# 'just OruCa::usb' のように呼び出します。
+# [実行例] just OruCa::down
+down:
+    @echo "--> 🛑 Stopping OruCa"
+    @podman kube down ./pod.yml
 
-# (WSL用) OruCaのNFCリーダーをWSLにアタッチします
-# (OruCa/Makefile の 'attach-usb' から移植)
-usb:
-    @echo "🔌 Attaching USB FeliCa Reader to WSL..."
-    @powershell.exe -ExecutionPolicy Bypass -File ./usb-wsl-attach.ps1
-    @echo "✅ USB device attached."
-
-# OruCaのDBバックアップを保存します(例: just OruCa::backup)
+# [実行例] just OruCa::backup
+# OruCaのDBバックアップを保存します
 backup:
     @echo "💾 Saving OruCa MySQL backup..."
-    @# ルートの 'set export' により $MYSQL_USER 等が環境変数として利用可能です
-    @docker compose -f ../docker-compose.yml \
-        exec oruca-mysql sh -c "mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
+    @# podman exec を使用し、コンテナ内の環境変数 ($$MYSQL_USER など) を参照します
+    @# $$ は just による展開を防ぎ、コンテナ内の sh に $ を渡すためのエスケープです
+    @# $$(date ...) はコンテナ内の sh で実行（コマンド置換）されます
+    @podman exec oruca-mysql sh -c "mkdir -p /backups/$$(date +%Y%m%d-%H%M%S) && mysqldump -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
     @echo "✅ Backup created in OruCa mysql volume's /backups directory."
 
-# OruCaのDBバックアップをリストアします (例: just OruCa::restore YYYYMMDD-HHMMSS)
+# [実行例] just OruCa::restore YYYYMMDD-HHMMSS
+# OruCaのDBバックアップをリストアします
 restore BACKUP_DATE:
     @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_DATE}}..."
-    @docker compose -f ../docker-compose.yml \
-        exec -T oruca-mysql sh -c "mysql -u'root' -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /backups/{{BACKUP_DATE}}/backup.sql"
+    @# podman exec -i (interactive) を使用して標準入力をコンテナの sh に渡し、mysql に流し込みます
+    @podman exec -i oruca-mysql sh -c "mysql -u'root' -p$$MYSQL_ROOT_PASSWORD $$MYSQL_DATABASE < /backups/{{BACKUP_DATE}}/backup.sql"
     @echo "✅ Restore complete."

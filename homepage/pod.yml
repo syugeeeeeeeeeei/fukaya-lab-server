@@ -1,0 +1,33 @@
+# /homepage/pod.yml (新規作成)
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: homepage-pod
+  labels:
+    project: "fukaya-lab-server"
+spec:
+  networks:
+    - name: fukaya-lab-network
+
+  containers:
+    - name: homepage
+      image: homepage:latest # (事前に podman build -t homepage ./vite_homepage が必要)
+      volumeMounts:
+        - mountPath: /app
+          name: homepage-src
+      expose:
+        - 4000
+      command: ["yarn","dev"]
+      labels:
+        caddy: http://fukaya-sus.lab
+        caddy.reverse_proxy: "{{upstreams 4000}}"
+      tty: true
+      stdinOpen: true
+
+  volumes:
+    # バインドマウント (hostPath)
+    - name: homepage-src
+      hostPath:
+        path: ./vite_homepage
+        type: Directory

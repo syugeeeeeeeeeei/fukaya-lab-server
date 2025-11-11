@@ -1,0 +1,56 @@
+# /gitlab/pod.yml (新規作成)
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gitlab-pod
+  labels:
+    project: "fukaya-lab-server"
+spec:
+  networks:
+    - name: fukaya-lab-network
+
+  portMappings:
+    - containerPort: 22
+      hostPort: 2222
+      protocol: tcp
+    - containerPort: 80
+      hostPort: 8080 # (例: Caddy で管理しない場合のホストポート)
+      protocol: tcp
+    # HTTPS を使う場合は 443 も追加
+
+  containers:
+    - name: gitlab
+      image: 'gitlab/gitlab-ce:latest'
+      hostname: 'gitlab.fukaya-sus.lab'
+      env:
+        - name: GITLAB_OMNIBUS_CONFIG
+          value: |
+            gitlab_rails['gitlab_shell_ssh_port'] = 2222
+            gitlab_rails['gitlab_default_locale'] = 'ja'
+            # external_url は Caddy を使うため設定不要か、
+            # Caddy 側で http://localhost:80 (Pod IP) を指す
+      volumeMounts:
+        - mountPath: /etc/gitlab
+          name: gitlab-config-pvc
+        - mountPath: /var/log/gitlab
+          name: gitlab-logs-pvc
+        - mountPath: /var/opt/gitlab
+          name: gitlab-data-pvc
+      shmSize: 256 # (shm_size は Pod レベルでの設定が必要な場合あり)
+      # Caddy ラベル (もし Caddy で公開する場合)
+      labels:
+        caddy: http://gitlab.fukaya-sus.lab
+        caddy.reverse_proxy: "{{upstreams 80}}"
+
+  volumes:
+    # 名前付きボリューム (PersistentVolumeClaim)
+    - name: gitlab-config-pvc
+      persistentVolumeClaim:
+        claimName: gitlab_config
+    - name: gitlab-logs-pvc
+      persistentVolumeClaim:
+        claimName: gitlab_logs
+    - name: gitlab-data-pvc
+      persistentVolumeClaim:
+        claimName: gitlab_data

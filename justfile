@@ -1,127 +1,87 @@
-# .env ファイルを自動で読み込み、シェル環境変数としてエクスポートする
-set export := true
-set dotenv-load := true
+# /justfile (ルート)
 
-# --- 📦 サービス・モジュールの読み込み ---
-# 各サービスディレクトリ内の 'justfile' をモジュールとして読み込みます。
-mod OruCa
-mod gitlab
-mod homepage
+# -----------------------------------------------------------------
+#  設定: プロジェクト・オーケストレーション
+# -----------------------------------------------------------------
+
+# 各サービス・モジュールを読み込む
+# 固有タスク (build, up, down) は just OruCa::up のように呼び出す
 mod Entry
-# ... (将来、固有タスクが必要なサービスをここに追加) ...
+mod OruCa
+mod homepage
+mod portainer
+mod ProjectBotany
+# mod gitlab # 未完成
 
-_default:
+# Podman が使用する共通ネットワーク
+NETWORK := "fukaya-lab-network"
+
+# -----------------------------------------------------------------
+#  📦 全体 サービス管理 (Global Tasks)
+# -----------------------------------------------------------------
+
+# [実行例] just up
+# 全サービスの up タスクに依存
+[parallel]
+up: _setup-network Entry::up OruCa::up homepage::up portainer::up ProjectBotany::up
+    @echo "==> ✅ All services started."
+
+# [実行例] just down
+# 全サービスの down タスクに依存
+[parallel]
+down: Entry::down OruCa::down homepage::down portainer::down ProjectBotany::down
+    @echo "==> 🛑 All services stopped."
+
+# [実行例] just build
+# 全サービスの build タスクに依存
+[parallel]
+build: _setup-network Entry::build OruCa::build homepage::build portainer::build ProjectBotany::build
+    @echo "==> 🏗️ All services built."
+
+# [実行例] just ls (just --list と同じ)
+ls:
     @just --list
 
-# --- 🏗️ ビルド メタタスク ---
-# 規約: このタスクは、ビルドが必要な全サービスの 'build' タスクに依存します。
-# OruCa::build は、OruCa/justfile 内の 'build' タスクを指します。
-# [parallel] 属性により、OruCa::build や将来追加するタスクが並列実行されます。
-[parallel]
-_build: OruCa::build
-    @echo "✅ All required services built."
+# [実行例] just ps
+ps:
+    @echo "==> 🏃 Running Pods (podman pod ls)"
+    @podman pod ls
 
+# -----------------------------------------------------------------
+#  🌐 ネットワーク (プライベートタスク)
+# -----------------------------------------------------------------
+# 'up' または 'build' から依存されるプライベートタスク
+[private]
+_setup-network:
+    @podman network exists {{NETWORK}} || (echo "==> 🌐 Creating network: {{NETWORK}}..." && podman network create {{NETWORK}})
 
-# --- 🚀 プロジェクト基本操作 ---
+# -----------------------------------------------------------------
+#  🛠️ サービス固有コマンド (エイリアス)
+# -----------------------------------------------------------------
 
-# [本番] 全サービスをビルドし、全てのサービスを起動します
-up-prod: _build
-    @echo "🚀 Starting all production services..."
-    @docker compose --profile prod up -d --build
+# [実行例] just backup-oruca (just OruCa::backup のエイリアス)
+alias backup-oruca := OruCa::backup
 
-# [開発] 基礎サービス + OruCa(dev) を起動します
-up-dev:
-    @echo "🛠️ Starting development services (including OruCa Vite)..."
-    @docker compose --profile dev up -d
+# [実行例] just restore-oruca (just OruCa::restore のエイリアス)
+alias restore-oruca := OruCa::restore
 
-# 全てのサービスを停止します
-down:
-    @echo "🛑 Stopping all services..."
-    @# 開発/本番プロファイルで起動したサービスも確実に停止・削除するため、プロファイルを明示
-    @docker compose --profile dev --profile prod down
+# -----------------------------------------------------------------
+#  🖥️ Pod化対象外 (AppFlowy)
+# -----------------------------------------------------------------
+# これらはサービスモジュールではないため、ルートにそのまま残す
+appflowy-up:
+    @echo "==> 🚀 Starting AppFlowy (non-Pod)..."
+    @podman run -d --rm --name appflowy \
+        --network=host \
+        -e DISPLAY=$DISPLAY \
+        -e NO_AT_BRIDGE=1 \
+        -v $HOME/.Xauthority:/root/.Xauthority:rw \
+        -v /tmp/.X11-unix:/tmp/.X11-unix \
+        -v /dev/dri:/dev/dri \
+        -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
+        --device /dev/dri \
+        appflowy/appflowy:latest
 
-# 全てのサービスを停止し、関連するボリュームも削除します
-# 💥 警告: 関連する名前付きボリュームのデータが消去されます！
-down-v:
-    @echo "💣 Stopping all services and REMOVING ASSOCIATED VOLUMES..."
-    @echo "   (Data will be lost!)"
-    @docker compose --profile dev --profile prod down -v
-
-# 指定したサービスを再起動します (例: just restart oruca-api)
-restart *ARGS:
-    @echo "🔄 Restarting services: {{ if ARGS == "" { "all" } else { ARGS } }}"
-    @docker compose restart {{ARGS}}
-
-
-# --- 🩺 モニタリング ---
-
-# サービスのログを表示します (例: just logs oruca-api oruca-nfc)
-logs *ARGS:
-    @echo "📜 Showing logs for: {{ if ARGS == "" { "all services" } else { ARGS } }}"
-    @docker compose logs -f {{ARGS}}
-
-# 実行中のサービス名リストを表示します
-ls:
-    @echo "📋 Currently running services:"
-    @docker compose ps --services
-
-# 指定したサービスを強制的に再作成します (コンテナのみ)
-recreate *ARGS:
-    @if [ "{{ARGS}}" = "" ]; then \
-        echo "ERROR: Please specify service name(s) to recreate."; \
-        exit 1; \
-    fi
-    @echo "♻️ Forcibly recreating services (container only): {{ARGS}}..."
-    @docker compose up -d --force-recreate --no-deps {{ARGS}}
-    @echo "✅ Services {{ARGS}} have been recreated."
-
-# 指定したサービスをボリュームごと削除し、再作成します
-# 警告: 関連する名前付きボリュームのデータが消去されます！
-rebuild *ARGS:
-    @if [ "{{ARGS}}" = "" ]; then \
-        echo "ERROR: Please specify service name(s) to rebuild."; \
-        exit 1; \
-    fi
-    @echo "💣 WARNING: Rebuilding services {{ARGS}} and REMOVING ASSOCIATED VOLUMES..."
-    @echo "   (Data will be lost for these services!)"
-    @docker compose down -v {{ARGS}}
-    @echo "   (Services stopped and volumes removed. Now recreating with build...)"
-    @docker compose up -d --build {{ARGS}}
-    @echo "✅ Services {{ARGS}} have been rebuilt."
-
-
-# --- 🛠️ 初回セットアップ ---
-
-# (初回のみ) 永続ネットワーク 'fukaya-lab-network' を作成します
-_net-create:
-    @echo "🌐 Creating persistent 'fukaya-lab-network'..."
-    @docker network create \
-      --driver=bridge \
-      --subnet=172.20.0.0/24 \
-      fukaya-lab-network || echo "INFO: Network 'fukaya-lab-network' already exists."
-
-# (初回のみ) .env ファイルを .env.example からコピーします
-_init-env:
-    @if [ ! -f .env ]; then \
-        echo "📄 Creating .env file from .env.example ..."; \
-        cp .env.example .env; \
-    else \
-        echo "INFO: .env file already exists."; \
-    fi
-
-# プロジェクトの初回セットアップ (ネットワーク作成 + .env準備)
-setup: _net-create _init-env
-    @echo "🎉 Initial setup complete. Please edit .env file if necessary."
-
-
-# --- 🔧 運用ユーティリティ ---
-
-# 全サービスのDockerイメージを最新版に更新します
-pull:
-    @echo "⏬ Pulling latest images for all services..."
-    @docker compose pull
-
-# 不要なDockerリソースをクリーンアップします
-prune:
-    @echo "🧹 Pruning Docker resources (stopped containers, unused networks, dangling images)..."
-    @docker system prune -af
+appflowy-down:
+    @echo "==> 🛑 Stopping AppFlowy..."
+    @podman stop appflowy
