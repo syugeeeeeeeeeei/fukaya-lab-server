@@ -1,26 +1,30 @@
 # /OruCa/justfile (修正後)
-
 _default:
   @just --list -u
 
 [doc("OruCa サービスに必要な Podman イメージをビルドします。")]
 build:
     @echo "==> 🔨 Building OruCa images..."
-    # [変更] podman compose でビルド
-    @podman compose --env-file ../../.env build
+    # [変更] podman-compose でビルド
+    @podman-compose --env-file ../../.env build
     @echo "==> ✅ OruCa images built."
 
 [doc("OruCa の Pod (pod.yml) を起動します。")]
 up: build
     @echo "--> 🚀 Starting OruCa"
-    # [変更] podman compose で起動
-    @podman compose --env-file ../../.env up -d
+    # [変更] podman-compose で起動
+    @podman-compose --env-file ../../.env up -d
 
 [doc("OruCa の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping OruCa"
-    # [変更] podman compose で停止
-    @podman compose --env-file ../../.env down
+    # [変更] podman-compose で停止
+    @podman-compose --env-file ../../.env down
+
+[doc("OruCa の PodとVolume を停止します。")]
+down-v:
+    @echo "==> 🗑️ Stopping pod and deleting volumes..."
+    @podman-compose down --volumes
 
 [doc("OruCa の MySQL データベースのバックアップを作成します。")]
 backup:

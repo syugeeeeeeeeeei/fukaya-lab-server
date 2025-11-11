@@ -6,14 +6,18 @@ _default:
 # [変更] just Entry::build
 build:
     @echo "==> 🔨 Building Entry (if images defined)..."
-    @podman compose --env-file ../../.env build
+    @podman-compose --env-file ../../.env build
 
 # [変更] just Entry::up
 up:
     @echo "--> 🚀 Starting Entry"
-    @podman compose --env-file ../../.env up -d
+    @podman-compose --env-file ../../.env up -d
 
 # [変更] just Entry::down
 down:
     @echo "--> 🛑 Stopping Entry"
-    @podman compose --env-file ../../.env down
+    @podman-compose --env-file ../../.env down
+
+down-v:
+    @echo "==> 🗑️ Stopping pod and deleting volumes..."
+    @podman-compose down --volumes

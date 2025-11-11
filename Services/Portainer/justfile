@@ -1,27 +1,26 @@
-# /Services/ProjectBotany/justfile (修正後)
+# /Services/portainer/justfile
 
 SERVICE_NAME := shell("basename $(pwd)")
 
 _default:
   @just --list -u
 
-[doc("ProjectBotany サービスに必要な Podman イメージをビルドします。")]
+[doc("Portainer サービスはビルド不要です（既存イメージ利用）。")]
 build:
-    @echo "🔨 [{{SERVICE_NAME}}] Building images"
+    @echo "ℹ️ [{{SERVICE_NAME}}] Building"
     @podman-compose --env-file ../../.env build
-    @echo "✅ [{{SERVICE_NAME}}] images built"
 
-[doc("ProjectBotany の Pod を起動します。")]
-up: build
+[doc("Portainer の Pod を起動します。")]
+up:
     @echo "🚀 [{{SERVICE_NAME}}] Starting"
     @podman-compose --env-file ../../.env up -d
 
-[doc("ProjectBotany の Pod を停止します。")]
+[doc("Portainer の Pod を停止します。")]
 down:
     @echo "🛑 [{{SERVICE_NAME}}] Stopping"
     @podman-compose --env-file ../../.env down
 
-[doc("ProjectBotany の PodとVolume を停止します。")]
+[doc("Portainer の PodとVolume を停止します。")]
 down-v:
     @echo "🗑️ [{{SERVICE_NAME}}] Stopping pod and deleting volumes..."
     @podman-compose down --volumes

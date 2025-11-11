@@ -6,14 +6,18 @@ _default:
 [doc("gitlab サービスはビルド不要です（既存イメージ利用）。")]
 build:
     @echo "==> ℹ️ Building gitlab (if images defined)..."
-    @podman compose --env-file ../../.env build
+    @podman-compose --env-file ../../.env build
 
 [doc("gitlab の Pod (pod.yml) を起動します。")]
 up:
     @echo "--> 🚀 Starting gitlab"
-    @podman compose --env-file ../../.env up -d
+    @podman-compose --env-file ../../.env up -d
 
 [doc("gitlab の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping gitlab"
-    @podman compose --env-file ../../.env down
+    @podman-compose --env-file ../../.env down
+
+down-v:
+    @echo "==> 🗑️ Stopping pod and deleting volumes..."
+    @podman-compose down --volumes

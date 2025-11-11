@@ -14,22 +14,37 @@ mod Entry "./Services/Entry"
 [group("Services")]
 mod OruCa "./Services/OruCa"
 [group("Services")]
-mod homepage "./Services/homepage"
+mod Homepage "./Services/Homepage"
 [group("Services")]
-mod portainer "./Services/portainer"
+mod Portainer "./Services/Portainer"
 [group("Services")]
 mod ProjectBotany "./Services/ProjectBotany"
 [group("Services")]
-mod gitlab "./Services/gitlab"
+mod GitLab "./Services/GitLab"
 
 NETWORK := "fukaya-lab-network"
+ENV_FILE := ".env"
+ENV_EXAMPLE_FILE := ".env.example"
+
+# -----------------------------------------------------------------
+#  🏁 初期セットアップ (追加)
+# -----------------------------------------------------------------
+
+[doc("環境設定 (.env) とネットワークの初期セットアップを行います。")]
+init:
+    @just _setup-env
+    @just _setup-network
+
+[private]
+_setup-env:
+    @[[ -f "{{ENV_FILE}}" ]] && (echo "==> ℹ️ '{{ENV_FILE}}' は既に存在するため、コピーをスキップします。") || (echo "==> 📄 '{{ENV_EXAMPLE_FILE}}' から '{{ENV_FILE}}' を作成します..." && cp "{{ENV_EXAMPLE_FILE}}" "{{ENV_FILE}}")
 
 # -----------------------------------------------------------------
 #  📦 全体 サービス管理 (Global Tasks)
 # -----------------------------------------------------------------
 
 # [private] 共通の実行スクリプトを呼び出すヘルパー
-# $1: タスク (up, down, build, ls)
+# $1: タスク (up, down, down-v, build, ls)
 # $2: 引数で渡されたサービスリスト (services変数)
 [private]
 _run task services:
@@ -48,6 +63,12 @@ down *services:
     @just _run 'down' "{{services}}"
     @echo "==> ✅ 'down' task finished for targets."
 
+[doc("全サービス (または指定したサービス) を停止し、ボリュームも削除します。")] # 👈 [追加]
+down-v *services:
+    @echo "==> 🗑️ Stopping Pods AND deleting volumes..."
+    @just _run 'down-v' "{{services}}"
+    @echo "==> ✅ 'down-v' task finished for targets."
+
 [doc("全サービス (または指定したサービス) を並列でビルドします。")]
 build *services:
     @just _setup-network
@@ -61,6 +82,10 @@ build *services:
 [private]
 _setup-network:
     @podman network exists {{NETWORK}} || (echo "==> 🌐 Creating network: {{NETWORK}}..." && podman network create {{NETWORK}})
+
+[doc("Podman ネットワーク ({{NETWORK}}) を削除します。")] # 👈 [追加]
+delete-network:
+    @podman network exists {{NETWORK}} && (echo "==> 🌐 Deleting network: {{NETWORK}}..." && podman network rm {{NETWORK}}) || (echo "==> ℹ️ Network '{{NETWORK}}' does not exist.")
 
 # -----------------------------------------------------------------
 #  🩺 モニタリング
