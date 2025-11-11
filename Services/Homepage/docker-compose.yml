@@ -19,3 +19,9 @@ services:
       caddy.reverse_proxy: "{{upstreams 4000}}"
     tty: true
     stdin_open: true
+
+# [追加] ネットワークの定義
+networks:
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network

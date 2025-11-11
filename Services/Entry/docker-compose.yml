@@ -13,7 +13,8 @@ services:
     environment:
       - CADDY_INGRESS_NETWORKS=fukaya-lab-network
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      # [変更] podman.sock のパスを指定します
+      - /run/podman/podman.sock:/var/run/docker.sock 
       - caddy_data:/data
 
   # 👑 CoreDNS - Primary DNS Resolver
@@ -52,3 +53,14 @@ services:
     labels:
       caddy: http://dns.fukaya-sus.lab
       caddy.reverse_proxy: "{{upstreams 3000}}"
+
+# [追加] ネットワークとボリュームの定義
+networks:
+  fukaya-lab-network:
+    external: true # 👈 justfile で作成されるため external
+    name: fukaya-lab-network
+
+volumes:
+  caddy_data: 
+  adguard_work: 
+  adguard_conf: 

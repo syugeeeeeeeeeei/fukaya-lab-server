@@ -1,18 +1,19 @@
-# /Services/portainer/justfile
+# /Services/portainer/justfile (修正後)
 
 _default:
   @just --list -u
 
 [doc("portainer サービスはビルド不要です（既存イメージ利用）。")]
 build:
-    @echo "==> ℹ️ portainer has no images to build. (Uses pre-built image)"
+    @echo "==> ℹ️ Building portainer (if images defined)..."
+    @podman compose --env-file ../../.env build
 
 [doc("portainer の Pod (pod.yml) を起動します。")]
 up:
     @echo "--> 🚀 Starting portainer"
-    @podman kube play ./pod.yml
+    @podman compose --env-file ../../.env up -d
 
 [doc("portainer の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping portainer"
-    @podman kube down ./pod.yml
+    @podman compose --env-file ../../.env down

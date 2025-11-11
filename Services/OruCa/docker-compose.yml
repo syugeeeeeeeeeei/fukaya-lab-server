@@ -30,7 +30,7 @@ services:
       - oruca-api # apiがmysqlに依存するため、これでmysql起動後になる
     networks:
       - default
-      - fukaya-lab-network
+      - fukaya-lab-network # 👈 共通ネットワークに参加
     restart: unless-stopped
     profiles:
       - "prod"
@@ -54,7 +54,7 @@ services:
       - SYS_NICE
     volumes:
       - ./mysql/data/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql # 👈 ボリュームを使用
       - ./mysql/backups:/backups
     # ports: # 外部から直接DBにアクセスしない場合はコメントアウト推奨
       # - "3306:3306"
@@ -110,5 +110,13 @@ services:
 
 
 networks:
-  default : # リバースプロキシのdocker-compose.ymlで定義・作成されるネットワークを参照
+  default : 
     driver: bridge
+  # [追加] 共通ネットワークを external として定義
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network
+
+# [追加] ボリュームを定義 (自動作成)
+volumes:
+  mysql_data:

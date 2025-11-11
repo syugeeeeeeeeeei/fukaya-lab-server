@@ -1,4 +1,4 @@
-# /Services/ProjectBotany/justfile
+# /Services/ProjectBotany/justfile (修正後)
 
 _default:
   @just --list -u
@@ -6,15 +6,18 @@ _default:
 [doc("ProjectBotany サービスに必要な Podman イメージをビルドします。")]
 build:
     @echo "==> 🔨 Building ProjectBotany images..."
-    @podman build -t botany-vite:latest ./vite
+    # [変更] podman compose でビルド
+    @podman compose --env-file ../../.env build
     @echo "==> ✅ ProjectBotany images built."
 
 [doc("ProjectBotany の Pod (pod.yml) を起動します。")]
 up: build
     @echo "--> 🚀 Starting ProjectBotany"
-    @podman kube play ./pod.yml
+    # [変更] podman compose で起動
+    @podman compose --env-file ../../.env up -d
 
 [doc("ProjectBotany の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping ProjectBotany"
-    @podman kube down ./pod.yml
+    # [変更] podman compose で停止
+    @podman compose --env-file ../../.env down

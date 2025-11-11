@@ -41,3 +41,14 @@ services:
     shm_size: '256m' # Puma（GitLabのWebサーバー）のために推奨される共有メモリサイズ
     networks:
       - fukaya-lab-network
+
+# [追加] ネットワークとボリュームの定義
+networks:
+  fukaya-lab-network:
+    external: true
+    name: fukaya-lab-network
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

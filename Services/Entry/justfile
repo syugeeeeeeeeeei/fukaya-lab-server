@@ -1,18 +1,19 @@
-# /Entry/justfile
+# /Entry/justfile (修正後)
 
 _default:
   @just --list
 
-# [実行例] just Entry::build
+# [変更] just Entry::build
 build:
-    @echo "==> ℹ️ Entry has no images to build."
+    @echo "==> 🔨 Building Entry (if images defined)..."
+    @podman compose --env-file ../../.env build
 
-# [実行例] just Entry::up
+# [変更] just Entry::up
 up:
     @echo "--> 🚀 Starting Entry"
-    @podman kube play ./pod.yml
+    @podman compose --env-file ../../.env up -d
 
-# [実行例] just Entry::down
+# [変更] just Entry::down
 down:
     @echo "--> 🛑 Stopping Entry"
-    @podman kube down ./pod.yml
+    @podman compose --env-file ../../.env down

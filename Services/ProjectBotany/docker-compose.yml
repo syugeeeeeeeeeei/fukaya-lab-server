@@ -1,5 +1,5 @@
 name: projectbotany
-# ProjectBotany/docker-compose.yml (修正)
+# ProjectBotany/docker-compose.yml (修正不要)
 services:
   # -----------------------------------------------------------
   #  🌿 ProjectBotany (本番環境: prod)
