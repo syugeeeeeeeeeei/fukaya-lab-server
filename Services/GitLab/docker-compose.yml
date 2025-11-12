@@ -1,3 +1,4 @@
+name: "gitlab"
 services:
   gitlab:
     image: 'gitlab/gitlab-ce:latest' # 使用するGitLabのDockerイメージ（Community Editionの最新版）

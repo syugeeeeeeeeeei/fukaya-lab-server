@@ -17,7 +17,7 @@ up: build
 [doc("homepage の Pod (pod.yml) を停止します。")]
 down:
     @echo "--> 🛑 Stopping homepage"
-    @docker compose --env-file ../../.env 
+    @docker compose --env-file ../../.env down
     
 down-v:
     @echo "==> 🗑️ Stopping pod and deleting volumes..."

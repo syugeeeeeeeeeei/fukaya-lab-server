@@ -1,3 +1,4 @@
+name: "homepage"
 services:
   homepage:
     build:

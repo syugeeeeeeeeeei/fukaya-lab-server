@@ -1,3 +1,4 @@
+name: "Entry"
 services:
   # 🔄 Caddy - Reverse Proxy
   caddy:
