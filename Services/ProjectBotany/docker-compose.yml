@@ -1,5 +1,4 @@
 # ProjectBotany/docker-compose.yml
-name: projectbotany
 services:
   # -----------------------------------------------------------
   #  🌿 ProjectBotany

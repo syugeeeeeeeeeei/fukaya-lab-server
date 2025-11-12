@@ -1,4 +1,3 @@
-name: "oruca"
 services:
  # 開発用 Vite
   oruca-vite:
