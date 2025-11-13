@@ -1,94 +1,91 @@
-#!/bin/sh
-# _run_services.sh
+#!/usr/bin/env bash
 
-# エラーが発生したらスクリプトを停止
-set -e
+# -----------------------------------------------------------------
+# justfile から呼び出されるサービス実行スクリプト
+# -----------------------------------------------------------------
+# 使い方: ./scripts/_run_services.sh <task> "<profile>" "<services>"
+# 例: ./scripts/_run_services.sh up "prod" "Entry OruCa"
+# -----------------------------------------------------------------
 
-# --- 引数の解析 ---
-TASK="$1"           # 'up', 'down', 'build', 'ls'
-DEFAULT_SERVICES="$2" # "Entry OruCa homepage ..."
-TARGET_SERVICES="$3"  # "OruCa homepage" (引数で指定された場合) または "" (空文字列)
+set -euo pipefail
 
-# --- 実行対象サービスの決定 ---
-SERVICES_TO_RUN=""
-if [ "$TASK" = "ls" ]; then
-  # 'ls' は常に全サービスを対象とする
-  SERVICES_TO_RUN="$DEFAULT_SERVICES"
-elif [ -n "$TARGET_SERVICES" ]; then
-  # 引数で指定されたサービスを使用
-  SERVICES_TO_RUN="$TARGET_SERVICES"
-else
-  # 引数がなければ、デフォルトの全サービスを使用
-  SERVICES_TO_RUN="$DEFAULT_SERVICES"
-fi
+# 1. 変数定義
+TASK=$1
+PROFILE=$2
+SERVICE_LIST=$3
+BASE_DIR=$(dirname "$(dirname "$0")") # /fukaya-lab-server-dev-podman
 
-# --- 'ls' タスクの処理 ---
-if [ "$TASK" = "ls" ]; then
-  # 'ls' はリスト表示するだけ
-  for service in $SERVICES_TO_RUN; do
-    echo " - $service"
-  done
-  exit 0 # 処理終了
-fi
+# サービスリストを配列に変換
+read -ra SERVICES <<< "$SERVICE_LIST"
 
-# --- サービスの存在チェック (ls 以外) ---
-# TARGET_SERVICES が指定された (空でない) 場合のみ、検証を行う。
-if [ -n "$TARGET_SERVICES" ]; then
-  INVALID_SERVICES=""
-  
-  # SERVICES_TO_RUN (TARGET_SERVICES と同じ) をループ
-  for service in $SERVICES_TO_RUN; do
-    found=0
-    # DEFAULT_SERVICES (定義済みリスト) をループして一致を探す
-    for default_service in $DEFAULT_SERVICES; do
-      if [ "$service" = "$default_service" ]; then
-        found=1
-        break
-      fi
+# ls タスクの処理 ( justfile で SERVICES 変数を表示するだけなのでシンプル)
+if [[ "$TASK" == "ls" ]]; then
+    for SERVICE in "${SERVICES[@]}"; do
+        echo "- $SERVICE"
     done
-    
-    # DEFAULT_SERVICES に存在しなかった場合
-    if [ $found -eq 0 ]; then
-      # 見つからなかったサービス名を記録 (先頭にスペースが入る)
-      INVALID_SERVICES="$INVALID_SERVICES $service"
-    fi
-  done
-  
-  # 見つからないサービスが1つでもあった場合
-  if [ -n "$INVALID_SERVICES" ]; then
-    echo "" # エラーを見やすくするため改行
-    echo "🚨 エラー: 以下のサービスは定義されていません。" >&2
-    echo "           (ルート justfile の 'SERVICES' 変数を確認してください)" >&2
-    echo "  -> $INVALID_SERVICES" >&2
-    echo "" # 改行
-    exit 1 # エラーでスクリプト終了
-  fi
+    exit 0
 fi
 
-# --- 'up', 'down', 'build' タスクの処理 ---
-echo "--> (Target services: $SERVICES_TO_RUN)"
+# サービスごとの実行
+for SERVICE in "${SERVICES[@]}"; do
+    
+    # サービスのディレクトリに移動
+    cd "$BASE_DIR/Services/$SERVICE"
+    
+    SERVICE_JUSTFILE="./justfile"
 
-# --- 各サービスに対するタスクを逐次実行 ---
-# 実行結果を累積するための変数を初期化
-AGGREGATE_EXIT_CODE=0
+    # up または build タスクの処理
+    if [[ "$TASK" == "up" || "$TASK" == "build" ]]; then
+        # [変更] サービス固有の justfile が存在する場合、処理を委譲する
+        if [[ -f "$SERVICE_JUSTFILE" ]]; then
+            echo "--> 🛠️ Delegating $SERVICE::$TASK to service justfile (Profile: ${PROFILE:-N/A})"
+            # [修正点] cd 済みのため、--directory オプションを削除
+            just "$TASK" "$PROFILE"
+        else
+            # [変更] justfile が存在しない場合、以前の共通ロジックをフォールバックとして実行
+            echo "--> ℹ️ Running common $SERVICE::$TASK (justfile not found. Profile: ${PROFILE:-dev})"
+            
+            DOCKER_COMPOSE_COMMAND="docker compose --env-file ../../.env"
+            CURRENT_PROFILE=${PROFILE:-dev}
+            DOCKER_COMPOSE_COMMAND+=" --profile $CURRENT_PROFILE"
+            
+            case "$TASK" in
+                "up")
+                    $DOCKER_COMPOSE_COMMAND up -d
+                    ;;
+                "build")
+                    $DOCKER_COMPOSE_COMMAND build
+                    ;;
+            esac
+        fi
 
-for service in $SERVICES_TO_RUN; do
-  echo "--- Running '$TASK' for $service ---"
-  
-  # justコマンドをフォアグラウンドで実行し、終了コードをキャプチャ
-  # エラーが発生しても set -e で即座に終了させず、次のサービスに移るために `|| true` を付加
-  just "$service::$TASK"
-  CURRENT_EXIT_CODE=$?
-  
-  if [ "$CURRENT_EXIT_CODE" -ne 0 ]; then
-    echo "--- ⚠️ ERROR: '$service' の '$TASK' が終了コード $CURRENT_EXIT_CODE で失敗しました。 ---" >&2
-    # 総合的な終了コードを失敗に設定
-    AGGREGATE_EXIT_CODE=1
-  else
-    echo "--- ✅ '$service' の '$TASK' が正常に完了しました。 ---"
-  fi
+    # down または down-v タスクの処理 (保守性のため、この共通ロジックに集約を維持)
+    elif [[ "$TASK" == "down" || "$TASK" == "down-v" ]]; then
+        DOCKER_COMPOSE_COMMAND="docker compose --env-file ../../.env"
+        
+        case "$TASK" in
+            "down")
+                echo "--> 🛑 Stopping $SERVICE (Common)"
+                $DOCKER_COMPOSE_COMMAND down
+                ;;
+            "down-v")
+                echo "--> 🗑️ Stopping $SERVICE and deleting volumes (Common)"
+                $DOCKER_COMPOSE_COMMAND down --volumes
+                ;;
+        esac
+
+    else
+        # サービス固有 justfile の呼び出し (非ジェネリックタスク: backup/restoreなど)
+        if [[ -f "$SERVICE_JUSTFILE" ]]; then
+            echo "--> 🛠️ Running $SERVICE::$TASK (Profile: ${PROFILE:-N/A})"
+            # [修正点] cd 済みのため、--directory オプションを削除
+            just "$TASK" "$PROFILE"
+        else
+            echo "--> ℹ️ Skipping $SERVICE::$TASK - justfile not found for non-generic task."
+        fi
+    fi
+
+    # ベースディレクトリに戻る
+    cd "$BASE_DIR"
+
 done
-
-echo "--> All tasks completed."
-# 総合的な終了コードを返してスクリプト終了
-exit $AGGREGATE_EXIT_CODE

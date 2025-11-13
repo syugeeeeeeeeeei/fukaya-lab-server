@@ -1,34 +1,47 @@
-# /OruCa/justfile (修正後)
+# /OruCa/justfile (再修正: up/buildタスクを復活させ、プロファイル制御を実装)
 _default:
   @just --list -u
 
-[doc("OruCa サービスに必要な Podman イメージをビルドします。")]
-build:
-    @echo "==> 🔨 Building OruCa images..."
-    @docker compose --env-file ../../.env build
-    @echo "==> ✅ OruCa images built."
+# -----------------------------------------------------------------
+#  ジェネリックタスク
+# -----------------------------------------------------------------
+# 外部のjustfileから profile 引数を受け取る
+[group("汎用タスク")]
+[doc("OruCa サービスに必要な Docker イメージをビルドします。")]
+build profile='dev':
+    @echo "==> 🔨 Building OruCa images (Profile: {{profile}})..."
+    @if [[ "{{profile}}" == "prod" ]]; then \
+        echo "--> 🏗️ Running Production Build (vite -> web)"; \
+        echo "    1. Starting vite (dev) for build..."; \
+        docker compose --env-file ../../.env --profile dev up -d vite && \
+        echo "    2. Executing yarn build..."; \
+        docker exec -w /usr/src/app/vite oruca-vite yarn build && \
+        echo "    3. Stopping vite container..."; \
+        docker compose --env-file ../../.env --profile dev down; \
+    else \
+        echo "--> 🏗️ Running Development Build..."; \
+        docker compose --env-file ../../.env --profile {{profile}} build; \
+    fi
+    @echo "==> ✅ OruCa images built/updated."
 
-[doc("OruCa の Pod (pod.yml) を起動します。")]
-up: build
-    @echo "--> 🚀 Starting OruCa"
-    @docker compose --env-file ../../.env up -d
+[group("汎用タスク")]
+[doc("OruCa の Pod を起動します。")]
+up profile='dev': build
+    @echo "--> 🚀 Starting OruCa (Profile: {{profile}})"
+    @docker compose --env-file ../../.env --profile {{profile}} up -d
 
-[doc("OruCa の Pod (pod.yml) を停止します。")]
-down:
-    @echo "--> 🛑 Stopping OruCa"
-    @docker compose --env-file ../../.env down
 
-[doc("OruCa の PodとVolume を停止します。")]
-down-v:
-    @echo "==> 🗑️ Stopping pod and deleting volumes..."
-    @docker compose --env-file ../../.env down --volumes
-
+# -----------------------------------------------------------------
+#  固有タスク
+# -----------------------------------------------------------------
+[group("固有タスク")]
 [doc("OruCa の MySQL データベースのバックアップを作成します。")]
 backup:
     @echo "💾 Saving OruCa MySQL backup..."
     @docker exec --env-file ../../.env oruca-mysql sh -c "mkdir -p /backups/$$(date +%Y%m%d-%H%M%S) && mysqldump -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
     @echo "✅ Backup created in OruCa mysql volume's /backups directory."
 
+[group("固有タスク")]
 [doc("指定した日時のバックアップから MySQL データベースをリストアします。")]
 restore BACKUP_DATE:
     @echo "🔄 Restoring OruCa MySQL backup from {{BACKUP_DATE}}..."

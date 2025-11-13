@@ -1,23 +1,16 @@
-# /Entry/justfile (修正後)
+# /Entry/justfile (再修正: up/buildタスクを復活)
+
+SERVICE_NAME := shell("basename $(pwd)")
 
 _default:
-  @just --list
+  @just --list -u
 
-# [変更] just Entry::build
-build:
-    @echo "==> 🔨 Building Entry (if images defined)..."
-    @docker compose --env-file ../../.env build
+# [変更] プロファイル指定に対応
+build profile='dev':
+    @echo "==> 🔨 Building {{SERVICE_NAME}} (Profile: {{profile}})..."
+    @docker compose --env-file ../../.env --profile {{profile}} build
 
-# [変更] just Entry::up
-up:
-    @echo "--> 🚀 Starting Entry"
-    @docker compose --env-file ../../.env up -d
-
-# [変更] just Entry::down
-down:
-    @echo "--> 🛑 Stopping Entry"
-    @docker compose --env-file ../../.env down
-
-down-v:
-    @echo "==> 🗑️ Stopping pod and deleting volumes..."
-    @docker compose --env-file ../../.env down --volumes
+# [変更] プロファイル指定に対応
+up profile='dev': build
+    @echo "--> 🚀 Starting {{SERVICE_NAME}} (Profile: {{profile}})"
+    @docker compose --env-file ../../.env --profile {{profile}} up -d

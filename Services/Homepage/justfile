@@ -1,24 +1,16 @@
 # /Services/homepage/justfile (修正後)
 
+SERVICE_NAME := shell("basename $(pwd)")
+
 _default:
   @just --list -u
 
-[doc("homepage サービスに必要な Podman イメージをビルドします。")]
-build:
-    @echo "==> 🔨 Building homepage images..."
-    @docker compose --env-file ../../.env build
-    @echo "==> ✅ homepage images built."
+# [変更] プロファイル指定に対応
+build profile='dev':
+    @echo "==> 🔨 Building {{SERVICE_NAME}} (Profile: {{profile}})..."
+    @docker compose --env-file ../../.env --profile {{profile}} build
 
-[doc("homepage の Pod (pod.yml) を起動します。")]
-up: build
-    @echo "--> 🚀 Starting homepage"
-    @docker compose --env-file ../../.env up -d
-
-[doc("homepage の Pod (pod.yml) を停止します。")]
-down:
-    @echo "--> 🛑 Stopping homepage"
-    @docker compose --env-file ../../.env down
-    
-down-v:
-    @echo "==> 🗑️ Stopping pod and deleting volumes..."
-    @docker compose --env-file ../../.env down --volumes
+# [変更] プロファイル指定に対応
+up profile='dev': build
+    @echo "--> 🚀 Starting {{SERVICE_NAME}} (Profile: {{profile}})"
+    @docker compose --env-file ../../.env --profile {{profile}} up -d

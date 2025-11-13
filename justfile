@@ -43,36 +43,38 @@ init:
 _setup-env:
   @[[ -f "{{ENV_FILE}}" ]] && (echo "==> ℹ️ '{{ENV_FILE}}' は既に存在するため、コピーをスキップします。") || (echo "==> 📄 '{{ENV_EXAMPLE_FILE}}' から '{{ENV_FILE}}' を作成します..." && cp "{{ENV_EXAMPLE_FILE}}" "{{ENV_FILE}}")
 
+
 # -----------------------------------------------------------------
 #  📦 全体 サービス管理 (Global Tasks)
 # -----------------------------------------------------------------
 
+# [修正] 実行順序はそのまま。_run_services.shにprofileを渡し、内部で処理を分岐させる
 [private]
-_run task services:
-  @./scripts/_run_services.sh {{task}} "{{SERVICES}}" "{{services}}"
+_run task profile services:
+  @./scripts/_run_services.sh {{task}} "{{profile}}" "{{services}}"
 
-[doc("全サービス (または指定したサービス) を並列で起動します。")]
-up *services:
-  @echo "==> 🚀 Pods/コンテナの起動を開始します..."
-  @just _run 'up' "{{services}}"
+[doc("全サービス (または指定したサービス) を並列で起動します。 (profile: dev/prod, default: dev)")]
+up profile='dev' *services:
+  @echo "==> 🚀 Pods/コンテナの起動を開始します... (Profile: {{profile}})"
+  @just _run 'up' "{{profile}}" "{{services}}"
   @echo "==> ✅ 'up' タスクがターゲットに対して完了しました。"
 
 [doc("全サービス (または指定したサービス) を並列で停止します。")]
 down *services:
   @echo "==> 🛑 Pods/コンテナの停止を開始します..."
-  @just _run 'down' "{{services}}"
+  @just _run 'down' "" "{{services}}"
   @echo "==> ✅ 'down' タスクがターゲットに対して完了しました。"
 
 [doc("全サービス (または指定したサービス) を停止し、ボリュームも削除します。")]
 down-v *services:
   @echo "==> 🗑️ Pods/コンテナを停止し、ボリュームを削除します..."
-  @just _run 'down-v' "{{services}}"
+  @just _run 'down-v' "" "{{services}}"
   @echo "==> ✅ 'down-v' タスクがターゲットに対して完了しました。"
 
-[doc("全サービス (または指定したサービス) を並列でビルドします。")]
-build *services:
-  @echo "==> 🏗️ サービスのビルドを開始します..."
-  @just _run 'build' "{{services}}"
+[doc("全サービス (または指定したサービス) を並列でビルドします。 (profile: dev/prod, default: dev)")]
+build profile='dev' *services:
+  @echo "==> 🏗️ サービスのビルドを開始します... (Profile: {{profile}})"
+  @just _run 'build' "{{profile}}" "{{services}}"
   @echo "==> ✅ 'build' タスクがターゲットに対して完了しました。"
 
 # -----------------------------------------------------------------
@@ -82,7 +84,7 @@ build *services:
 _setup-network:
   @docker network inspect {{NETWORK}} >/dev/null 2>&1 && (echo "==> ℹ️ Dockerネットワーク '{{NETWORK}}' は既に存在します。") || (echo "==> 🌐 Dockerネットワーク '{{NETWORK}}' を作成します..." && docker network create --driver=bridge --subnet=172.20.0.0/24 {{NETWORK}})
 
-[doc("Docker ネットワーク ({{NETWORK}}) を削除します。")]
+[doc("Docker ネットワークを削除します。")]
 delete-network:
   @docker network inspect {{NETWORK}} >/dev/null 2>&1 && (echo "==> 🌐 Dockerネットワーク '{{NETWORK}}' を削除します..." && docker network rm {{NETWORK}}) || (echo "==> ℹ️ Dockerネットワーク '{{NETWORK}}' は存在しません。")
 
@@ -93,7 +95,7 @@ delete-network:
 [doc("利用可能な全サービス (SERVICES 変数) の一覧を表示します。")]
 ls:
   @echo "==> 📋 利用可能なサービス (SERVICESリスト内)"
-  @just _run 'ls' ""
+  @just _run 'ls' "" ""
 
 [doc("実行中のコンテナ (docker ps) を表示します。")] 
 ps:
