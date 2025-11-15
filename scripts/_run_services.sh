@@ -13,7 +13,8 @@ set -euo pipefail
 TASK=$1
 PROFILE=$2
 SERVICE_LIST=$3
-BASE_DIR=$(dirname "$(dirname "$0")") # /fukaya-lab-server-dev-podman
+
+BASE_DIR=$(pwd) # /fukaya-lab-server
 
 # サービスリストを配列に変換
 read -ra SERVICES <<< "$SERVICE_LIST"

@@ -53,29 +53,57 @@ _setup-env:
 _run task profile services:
   @./scripts/_run_services.sh {{task}} "{{profile}}" "{{services}}"
 
+# -----------------------------------------------------------------
+# 🛠️ [修正箇所] 
+# set -u (unbound variable) エラーを回避するため、
+# 変数定義とロジックを単一のシェルセッション (@ 1行) にまとめる
+# -----------------------------------------------------------------
 [doc("全サービス (または指定したサービス) を並列で起動します。 (profile: dev/prod, default: dev)")]
 up profile='dev' *services:
   @echo "==> 🚀 Pods/コンテナの起動を開始します... (Profile: {{profile}})"
-  @just _run 'up' "{{profile}}" "{{services}}"
+  @services_to_run="{{services}}"; \
+  if [[ -z "${services_to_run}" ]]; then \
+      services_to_run="{{SERVICES}}"; \
+      echo "==> ℹ️ 起動サービスの指定がないため、全サービス ({{SERVICES}}) を対象とします。"; \
+  fi; \
+  just _run 'up' "{{profile}}" "${services_to_run}"
   @echo "==> ✅ 'up' タスクがターゲットに対して完了しました。"
 
 [doc("全サービス (または指定したサービス) を並列で停止します。")]
 down *services:
   @echo "==> 🛑 Pods/コンテナの停止を開始します..."
-  @just _run 'down' "" "{{services}}"
+  @services_to_run="{{services}}"; \
+  if [[ -z "${services_to_run}" ]]; then \
+      services_to_run="{{SERVICES}}"; \
+      echo "==> ℹ️ 停止サービスの指定がないため、全サービス ({{SERVICES}}) を対象とします。"; \
+  fi; \
+  just _run 'down' "" "${services_to_run}"
   @echo "==> ✅ 'down' タスクがターゲットに対して完了しました。"
 
 [doc("全サービス (または指定したサービス) を停止し、ボリュームも削除します。")]
 down-v *services:
   @echo "==> 🗑️ Pods/コンテナを停止し、ボリュームを削除します..."
-  @just _run 'down-v' "" "{{services}}"
+  @services_to_run="{{services}}"; \
+  if [[ -z "${services_to_run}" ]]; then \
+      services_to_run="{{SERVICES}}"; \
+      echo "==> ℹ️ 停止サービスの指定がないため、全サービス ({{SERVICES}}) を対象とします。"; \
+  fi; \
+  just _run 'down-v' "" "${services_to_run}"
   @echo "==> ✅ 'down-v' タスクがターゲットに対して完了しました。"
 
 [doc("全サービス (または指定したサービス) を並列でビルドします。 (profile: dev/prod, default: dev)")]
 build profile='dev' *services:
   @echo "==> 🏗️ サービスのビルドを開始します... (Profile: {{profile}})"
-  @just _run 'build' "{{profile}}" "{{services}}"
+  @services_to_run="{{services}}"; \
+  if [[ -z "${services_to_run}" ]]; then \
+      services_to_run="{{SERVICES}}"; \
+      echo "==> ℹ️ ビルドサービスの指定がないため、全サービス ({{SERVICES}}) を対象とします。"; \
+  fi; \
+  just _run 'build' "{{profile}}" "${services_to_run}"
   @echo "==> ✅ 'build' タスクがターゲットに対して完了しました。"
+# -----------------------------------------------------------------
+# 🛠️ [修正ここまで]
+# -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
 #  🌐 ネットワーク (プライベートタスク)
