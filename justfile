@@ -23,8 +23,8 @@ mod Homepage "./Services/Homepage"
 mod Portainer "./Services/Portainer"
 [group("Services")]
 mod ProjectBotany "./Services/ProjectBotany"
-[group("Services")]
-mod GitLab "./Services/GitLab"
+# [group("Services")]
+# mod GitLab "./Services/GitLab"
 
 NETWORK := "fukaya-lab-network"
 ENV_FILE := ".env"
