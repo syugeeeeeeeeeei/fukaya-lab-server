@@ -20,8 +20,9 @@ services:
     profiles: ["donotrun"]
 
 include:
-  - path: .Services/Infrastructure/Entry/docker-compose.yml
-  - path: .Services/Infrastructure/Portainer/docker-compose.yml
+  - path: ./Entry/docker-compose.yml
+    env_file: ../../.env
+  - path: ./Portainer/docker-compose.yml
 
 # -----------------------------------------------------------------
 #  ネットワークとボリュームの一元管理
@@ -31,6 +32,11 @@ networks:
   fukaya-lab-network:
     driver: bridge
     name: fukaya-lab-network
+    ipam:
+      driver: default
+      config:
+         - subnet: 172.20.0.0/24
+           gateway: 172.20.0.1
 
 volumes:
   # Entry サービス用

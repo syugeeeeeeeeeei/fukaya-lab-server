@@ -21,6 +21,7 @@ services:
     image: coredns/coredns:latest
     container_name: gatewaydns-coredns
     restart: unless-stopped
+
     ports:
       # IPとポートを環境変数から読み込む
       - "${HOST_IP}:${COREDNS_PORT}:53/tcp"

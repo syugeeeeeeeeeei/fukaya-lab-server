@@ -6,8 +6,7 @@ services:
       - "9000" # Portainerがリッスンするポート (HTTPの場合)
       - "9443" # Portainerがリッスンするポート (HTTPSの場合)
     volumes:
-      # [変更] podman.sock のパスを指定します (ホストのパスに合わせて変更してください)
-      - /run/podman/podman.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     restart: unless-stopped
     networks:
