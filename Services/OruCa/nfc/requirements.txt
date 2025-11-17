@@ -1,3 +1,0 @@
-nfcpy
-requests
-websocket-client

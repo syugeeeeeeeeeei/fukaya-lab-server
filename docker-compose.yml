@@ -20,12 +20,8 @@ services:
     profiles: ["donotrun"]
 
 include:
-  - path: ./Entry/docker-compose.yml
-  - path: ./OruCa/docker-compose.yml
-  - path: ./homepage/docker-compose.yml
-  - path: ./portainer/docker-compose.yml
-  # - path: ./gitlab/docker-compose.yml
-  - path: ./ProjectBotany/docker-compose.yml
+  - path: .Services/Infrastructure/Entry/docker-compose.yml
+  - path: .Services/Infrastructure/Portainer/docker-compose.yml
 
 # -----------------------------------------------------------------
 #  ネットワークとボリュームの一元管理
@@ -33,7 +29,7 @@ include:
 
 networks:
   fukaya-lab-network:
-    external: true
+    driver: bridge
     name: fukaya-lab-network
 
 volumes:
@@ -41,14 +37,5 @@ volumes:
   caddy_data:
   adguard_work:
   adguard_conf:
-
-  # OruCa サービス用
-  mysql_data:
-
   # Portainer サービス用
   portainer_data:
-
-  # GitLab サービス用
-  gitlab_config:
-  gitlab_logs:
-  gitlab_data:
