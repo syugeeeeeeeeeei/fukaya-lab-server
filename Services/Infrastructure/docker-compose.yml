@@ -29,13 +29,8 @@ include:
 
 networks:
   fukaya-lab-network:
-    driver: bridge
+    external: true
     name: fukaya-lab-network
-    ipam:
-      driver: default
-      config:
-         - subnet: 172.20.0.0/24
-           gateway: 172.20.0.1
 
 volumes:
   # Entry サービス用
