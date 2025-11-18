@@ -21,7 +21,6 @@ services:
 
 include:
   - path: ./Entry/docker-compose.yml
-    env_file: ../../.env
   - path: ./Portainer/docker-compose.yml
 
 # -----------------------------------------------------------------
