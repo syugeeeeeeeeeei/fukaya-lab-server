@@ -8,6 +8,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
+      - ${PORTAINER_COMPOSE_DIR}:/data/compose
     restart: unless-stopped
     networks:
       - fukaya-lab-network
