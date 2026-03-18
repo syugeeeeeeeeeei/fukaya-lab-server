@@ -1,5 +1,8 @@
 # /fukaya-lab-server/OruCa/justfile (新規作成)
 
+_default:
+	@just -l
+
 # --- 🛠️ OruCa ビルドタスク ---
 # ルートの 'build' メタタスクから 'OruCa::build' として呼び出されます。
 build:
