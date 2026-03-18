@@ -4,7 +4,6 @@ set dotenv-load := true
 
 # --- 📦 サービス・モジュールの読み込み ---
 mod OruCa
-mod gitlab
 mod homepage
 mod Entry
 
