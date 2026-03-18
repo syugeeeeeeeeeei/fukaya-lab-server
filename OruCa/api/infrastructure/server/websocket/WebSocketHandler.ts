@@ -28,20 +28,28 @@ export class WebSocketHandler {
 		});
 	}
 
+	// WebSocketHandler.ts の handleConnection メソッド内
 	private async handleConnection(ws: WebSocket.WebSocket) {
 		console.log("クライアントが接続しました");
 
+		// 接続が確立されるのを待つ (簡易的な対策)
+		if (ws.readyState !== WebSocket.OPEN) {
+			await new Promise((resolve) => ws.once("open", resolve));
+		}
+
 		try {
-			// 初期データをこのクライアントに送信
 			const initialLogs = await this.messageHandler.fetchLogs();
-			sendWsMessage(ws, {
-				type: "log/fetch",
-				payload: {
-					result: true,
-					content: initialLogs,
-					message: "クライアント接続時の初期データ" // メッセージをより具体的に
-				}
-			});
+			// 念のため送信直前にも状態を確認
+			if (ws.readyState === WebSocket.OPEN) {
+				sendWsMessage(ws, {
+					type: "log/fetch",
+					payload: {
+						result: true,
+						content: initialLogs,
+						message: "クライアント接続時の初期データ"
+					}
+				});
+			}
 		} catch (error) {
 			console.error("初期データ送信エラー:", error);
 			sendWsMessage(ws, {
