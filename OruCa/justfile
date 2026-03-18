@@ -1,5 +1,8 @@
 # /fukaya-lab-server/OruCa/justfile (新規作成)
 
+_default:
+	@just -l
+
 # --- 🛠️ OruCa ビルドタスク ---
 # ルートの 'build' メタタスクから 'OruCa::build' として呼び出されます。
 build:
@@ -21,11 +24,13 @@ usb:
 
 # OruCaのDBバックアップを保存します(例: just OruCa::backup)
 backup:
-    @echo "💾 Saving OruCa MySQL backup..."
-    @# ルートの 'set export' により $MYSQL_USER 等が環境変数として利用可能です
-    @docker compose -f ../docker-compose.yml \
-        exec oruca-mysql sh -c "mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > /backups/$$(date +%Y%m%d-%H%M%S)/backup.sql"
-    @echo "✅ Backup created in OruCa mysql volume's /backups directory."
+  @echo "💾 Saving OruCa MySQL backup..."
+  @docker compose -f ../docker-compose.yml \
+    exec oruca-mysql sh -c "\
+     TARGET_DIR=/backups/$(date +%Y%m%d-%H%M%S); \
+     mkdir -p \"\${TARGET_DIR}\" && \
+     mysqldump --no-tablespaces -u\${MYSQL_USER} -p\${MYSQL_PASSWORD} \${MYSQL_DATABASE} > \"\${TARGET_DIR}/backup.sql\""
+  @echo "✅ Backup created in OruCa mysql volume's /backups directory."
 
 # OruCaのDBバックアップをリストアします (例: just OruCa::restore YYYYMMDD-HHMMSS)
 restore BACKUP_DATE:
