@@ -1,6 +1,6 @@
 # main.py
-# FeliCaカードリーダーを制御し、読み取った学生IDをAPIサーバーのWebSocketエンドポイントに同期的にPubするスクリプト。
-# カードがリーダーから離れたとき（on_release）に一度だけPubすることで、カード滞留時の多重送信を防ぎます。
+# FeliCaカードリーダーを制御し、読み取った学生IDをAPIサーバーのWebSocketエンドポイントに同期的に送信するスクリプト。
+# タップした瞬間に送信し、カードがリーダーに置かれたままの場合の連続送信（多重送信）を防ぐ処理を含みます。
 
 import nfc # NFC通信ライブラリ
 from nfc.tag import Tag
@@ -19,10 +19,10 @@ class NFCReaderPublisher:
     WS_SERVER_URL = "ws://oruca-api:3000/log/write" # APIサーバーのWebSocketエンドポイント
 
     def __init__(self):
-        # カードが接続されたときにIDを一時的に保持するためのインスタンス変数
-        # Noneでない場合のみ、on_release時にPub処理が実行されます。
-        self._card_id_to_publish: str | None = None
-        print(f"NFCリーダーパブリッシャーを初期化しました。WS接続先: {self.WS_SERVER_URL}")
+        # 連続送信を防ぐため、直前に読み取ったIDを保持する変数
+        # カードが離されたとき(on_release)にクリアされます
+        self._last_read_id: str | None = None
+        print(f"NFCリーダーパブリッシャーを初期化しました。WebSocket接続先: {self.WS_SERVER_URL}")
 
     # ----------------------------------------------------------------------
     # 静的メソッド: 学生ID抽出関数
@@ -56,11 +56,11 @@ class NFCReaderPublisher:
                 raise Exception(f"未知のロール分類コード: {role_classification}")
 
     # ----------------------------------------------------------------------
-    # WebSocket Pubメソッド
+    # WebSocket 送信メソッド
     # ----------------------------------------------------------------------
     def publish_student_id(self, student_ID: str):
         """
-        指定された学生IDをAPIサーバーのWebSocketエンドポイントにメッセージとして送信（Pub）する。
+        指定された学生IDをAPIサーバーのWebSocketエンドポイントにメッセージとして送信する。
         """
         # サーバーに送信するデータペイロードをJSON形式で構築
         send_data = {
@@ -74,79 +74,80 @@ class NFCReaderPublisher:
         message = json.dumps(send_data)
         
         try:
-            # 修正: websocket.create_connection を使って接続を確立
-            print(f"接続試行中... API WSサーバー: {self.WS_SERVER_URL}")
+            # websocket.create_connection を使って接続を確立
+            print(f"接続試行中... API WebSocketサーバー: {self.WS_SERVER_URL}")
             ws = create_connection(self.WS_SERVER_URL, timeout=5)
+            
+            # サーバー接続時に送られてくる初期データを受信して待機する（即時切断エラー防止）
+            ws.recv()
+
             ws.send(message)
-            print(f"🟢 ID:{student_ID} をAPIサーバーに正常に発行しました。")
+            print(f"🟢 ID:{student_ID} をAPIサーバーに正常に送信しました。")
             ws.close()
             
         except Exception as e:
-            print(f"🔴 API WSサーバーへの発行エラー: {e}")
+            print(f"🔴 API WebSocketサーバーへの送信エラー: {e}")
 
     # ----------------------------------------------------------------------
-    # カード接続時コールバックメソッド (IDをインスタンス変数に保存)
+    # カード接続時コールバックメソッド (検知して即座に送信)
     # ----------------------------------------------------------------------
     def on_connect(self, tag: Tag) -> bool:
         """
         NFCリーダーにFeliCaカードが接続された際に呼び出されるコールバック。
-        IDを読み取り、Pubせずに一時保存します。（多重送信防止のため）
+        IDを読み取り、連続送信でなければ即座に送信します。
         """
         print("✨ カードが接続されました。データを読み取ります...")
     
         # 接続されたタグがFeliCa Standardタイプか、かつ設定されたシステムコードをサポートしているかを確認
         if isinstance(tag, nfc.tag.tt3_sony.FelicaStandard) and self.SYSTEM_CODE in tag.request_system_code():
         
-            # --- 💡 修正箇所: ここで polling を実行 ---
             # 読み書き処理の前に、指定したシステムコードでポーリングを行う必要がある
             try:
                 tag.idm, tag.pmm, *_ = tag.polling(self.SYSTEM_CODE)
             except Exception as e:
                 print(f"🔴 ポーリング失敗: {e}")
                 return True # ポーリング失敗時は処理を中断
-            # ------------------------------------
 
             try:
                 # 1. カードから学生IDを抽出（静的メソッドとして呼び出し）
                 student_ID = self.get_student_ID(tag)
 
-                # 2. PubせずにIDをインスタンス変数に保存
-                self._card_id_to_publish = student_ID
-                print(f"IDを抽出・保存しました: {student_ID}。カードが離れるのを待って発行します。")
+                # 2. 直前に読み取ったIDと異なる場合のみ送信処理を行う（連続送信防止）
+                if self._last_read_id != student_ID:
+                    print(f"🎉 新しいカードを検知しました。IDを送信します: {student_ID}")
+                    self.publish_student_id(student_ID)
+                    
+                    # 3. 送信済みのIDとして記録する
+                    self._last_read_id = student_ID
+                else:
+                    # 同じカードが置かれ続けている場合は送信をスキップ
+                    print(f"💡 カードが置かれたままです。ID:{student_ID} の連続送信をスキップします。")
+
             except Exception as e:
-               # 💡 エラー発生時に試行したサービスコード/ブロックコードの値がログに出力されます
                 print(f"🔴 カード処理中のエラー: {e}")
-                print("--- FeliCa Read Failed: 試行したサービスコードとブロックコードを確認してください ---")
-                self._card_id_to_publish = None # エラー時はクリア
+                print("--- FeliCa読み取り失敗: 試行したサービスコードとブロックコードを確認してください ---")
+                
         # 処理が完了したら接続セッションを終了し、次のポーリングに移る
         return True
     
     # ----------------------------------------------------------------------
-    # カード解放時コールバックメソッド (IDをPub)
+    # カード解放時コールバックメソッド (状態のリセット)
     # ----------------------------------------------------------------------
     def on_release(self, tag) -> bool:
         """
         FeliCaカードがリーダーから離れた際に呼び出されるコールバック。
-        保存されたIDがあればPubし、インスタンス変数をクリアします。
+        連続送信防止のための状態をリセットします。
         """
+        print("👋 カードがリーダーから離されました。連続送信防止状態をリセットします。")
         
-        if self._card_id_to_publish is not None:
-            print(f"🎉 カードが離されました。保存されたIDを発行します: {self._card_id_to_publish}")
-            
-            # 1. Pub処理を実行
-            self.publish_student_id(self._card_id_to_publish)
-            
-            # 2. Pubが完了したらIDをクリア（多重Pub防止）
-            self._card_id_to_publish = None
-        else:
-            # カードが読み取れなかった場合などは何もせず終了
-            pass
+        # カードが離されたら保持していたIDをクリアし、次回タッチ時に再度送信できるようにする
+        self._last_read_id = None
             
         # Trueを返すと次のポーリングが開始される
         return True
 
 # ----------------------------------------------------------------------
-# メイン処理 (クラス実行に変更)
+# メイン処理
 # ----------------------------------------------------------------------
 def main():
     """
@@ -164,7 +165,7 @@ def main():
                 while True:
                     # カードの接続を待機し、イベント発生時にコールバック関数を呼び出す
                     clf.connect(rdwr={
-                                    "on-connect": publisher.on_connect, # カード接続時のコールバック
+                                    "on-connect": publisher.on_connect, # カード検知時のコールバック
                                     "on-release": publisher.on_release, # カード解放時のコールバック
                                     "iterations":1}, # 接続試行を1回行う（カードが認識されるまでループ）
                                     )

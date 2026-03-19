@@ -34,26 +34,34 @@ export class WebSocketHandler {
 		try {
 			// 初期データをこのクライアントに送信
 			const initialLogs = await this.messageHandler.fetchLogs();
-			sendWsMessage(ws, {
-				type: "log/fetch",
-				payload: {
-					result: true,
-					content: initialLogs,
-					message: "クライアント接続時の初期データ" // メッセージをより具体的に
-				}
-			});
+
+			// クライアントが既に切断していないか状態を確認してから送信する
+			if (ws.readyState === WebSocket.OPEN) {
+				sendWsMessage(ws, {
+					type: "log/fetch",
+					payload: {
+						result: true,
+						content: initialLogs,
+						message: "クライアント接続時の初期データ" // メッセージをより具体的に
+					}
+				});
+			} else {
+				console.log("初期データを送信しようとしましたが、WebSocketはすでに閉じられています。");
+			}
 		} catch (error) {
 			console.error("初期データ送信エラー:", error);
-			sendWsMessage(ws, {
-				type: "log/fetch",
-				payload: {
-					result: false,
-					content: [],
-					message: "初期データの取得に失敗しました。"
-				}
-			});
+			// エラー送信時も接続状態を確認する
+			if (ws.readyState === WebSocket.OPEN) {
+				sendWsMessage(ws, {
+					type: "log/fetch",
+					payload: {
+						result: false,
+						content: [],
+						message: "初期データの取得に失敗しました。"
+					}
+				});
+			}
 		}
-
 
 		// メッセージ受信処理
 		ws.on("message", async (message) => { // async に変更
